@@ -109,7 +109,7 @@ export default function POSPage() {
       ) || [];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-100">
+    <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* Menu Selection Area */}
       <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
         {/* Header & Search */}
@@ -145,10 +145,12 @@ export default function POSPage() {
             {filteredItems.map((item) => (
               <Card
                 key={item.id}
-                className="p-3 cursor-pointer hover:shadow-md transition-all active:scale-95"
+                className="p-3 cursor-pointer border border-slate-200 shadow-sm hover:shadow-md transition-all active:scale-95 bg-white"
                 onClick={() => addToCart(item)}
               >
-                <h3 className="font-bold line-clamp-1">{item.name}</h3>
+                <h3 className="font-bold line-clamp-1 text-slate-800">
+                  {item.name}
+                </h3>
                 <p className="text-orange-600 font-bold">₹{item.price}</p>
               </Card>
             ))}
@@ -253,7 +255,7 @@ export default function POSPage() {
           </div>
 
           <Button
-            className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 py-6 text-lg font-bold"
+            className="w-full bg-orange-600 hover:bg-orange-700 py-6 text-lg font-bold shadow-md hover:shadow-lg transition-all"
             disabled={
               isPending || cart.length === 0 || !customerName || !customerMobile
             }

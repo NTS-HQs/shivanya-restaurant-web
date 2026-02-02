@@ -30,14 +30,14 @@ export default function SellerLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
-      <Card className="w-full max-w-md p-8 bg-white/10 backdrop-blur-lg border-white/20">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <Card className="w-full max-w-md p-8 bg-white border border-slate-200 shadow-sm">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Lock className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">Seller Login</h1>
-          <p className="text-slate-400 mt-1">
+          <h1 className="text-2xl font-bold text-slate-900">Seller Login</h1>
+          <p className="text-slate-500 mt-1">
             Access your restaurant dashboard
           </p>
         </div>
@@ -50,7 +50,7 @@ export default function SellerLoginPage() {
               placeholder="Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-slate-400"
+              className="pl-10 bg-white border-slate-200 text-slate-900 placeholder:text-slate-400"
               required
             />
           </div>
@@ -62,7 +62,7 @@ export default function SellerLoginPage() {
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-slate-400"
+              className="pl-10 bg-white border-slate-200 text-slate-900 placeholder:text-slate-400"
               required
             />
           </div>
@@ -72,7 +72,7 @@ export default function SellerLoginPage() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 py-6 text-lg font-bold"
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white py-6 text-lg font-bold shadow-sm hover:shadow-md transition-all"
           >
             {isLoading ? (
               <>

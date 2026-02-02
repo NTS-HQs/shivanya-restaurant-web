@@ -11,6 +11,8 @@ export type CartItem = {
 
 type CartStore = {
   items: CartItem[];
+  orderType: "dine_in" | "takeaway" | "delivery";
+  setOrderType: (type: "dine_in" | "takeaway" | "delivery") => void;
   addItem: (item: Omit<CartItem, "quantity">) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -23,6 +25,9 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      orderType: "dine_in", // Default order type
+
+      setOrderType: (type) => set({ orderType: type }),
 
       addItem: (item) => {
         set((state) => {

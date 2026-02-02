@@ -21,6 +21,7 @@ model RestaurantProfile {
   contact     String
   address     String   @db.Text
   bannerImage String?  // URL to banner image
+  paymentQrCode String? // URL to payment QR code
   openTime    String // e.g., "10:00"
   closeTime   String // e.g., "22:00"
   isOpen      Boolean  @default(true)

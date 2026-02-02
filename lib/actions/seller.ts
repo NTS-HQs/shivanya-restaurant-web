@@ -11,6 +11,7 @@ export async function updateRestaurantProfile(data: {
   closeTime?: string;
   isOpen?: boolean;
   bannerImage?: string;
+  paymentQrCode?: string;
   autoAccept?: boolean;
 }) {
   const profile = await prisma.restaurantProfile.findFirst();

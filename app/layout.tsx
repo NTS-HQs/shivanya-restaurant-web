@@ -15,6 +15,8 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Shivanya Restaurant",
   description: "Order delicious food from Shivanya Restaurant",
+  viewport:
+    "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0",
 };
 
 export default function RootLayout({

@@ -36,36 +36,66 @@ export default async function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card className="p-4 bg-gradient-to-br from-green-500 to-emerald-600 text-white border-0">
-          <div className="flex items-center justify-between mb-2">
-            <TrendingUp className="w-8 h-8 opacity-80" />
-            <span className="text-3xl font-bold">₹{stats.todaySales}</span>
+        <Card className="p-6 border border-slate-200 shadow-sm bg-white">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-slate-500">
+              Today's Sales
+            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">
+                ₹{stats.todaySales}
+              </span>
+              <div className="p-2 bg-green-50 rounded-lg">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+              </div>
+            </div>
           </div>
-          <p className="text-green-100">Today&apos;s Sales</p>
         </Card>
 
-        <Card className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-0">
-          <div className="flex items-center justify-between mb-2">
-            <ShoppingBag className="w-8 h-8 opacity-80" />
-            <span className="text-3xl font-bold">{stats.totalOrders}</span>
+        <Card className="p-6 border border-slate-200 shadow-sm bg-white">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-slate-500">
+              Total Orders
+            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">
+                {stats.totalOrders}
+              </span>
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <ShoppingBag className="w-4 h-4 text-blue-600" />
+              </div>
+            </div>
           </div>
-          <p className="text-blue-100">Total Orders</p>
         </Card>
 
-        <Card className="p-4 bg-gradient-to-br from-orange-500 to-red-600 text-white border-0">
-          <div className="flex items-center justify-between mb-2">
-            <Clock className="w-8 h-8 opacity-80" />
-            <span className="text-3xl font-bold">{stats.pendingOrders}</span>
+        <Card className="p-6 border border-slate-200 shadow-sm bg-white">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-slate-500">Pending</span>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">
+                {stats.pendingOrders}
+              </span>
+              <div className="p-2 bg-orange-50 rounded-lg">
+                <Clock className="w-4 h-4 text-orange-600" />
+              </div>
+            </div>
           </div>
-          <p className="text-orange-100">Pending Orders</p>
         </Card>
 
-        <Card className="p-4 bg-gradient-to-br from-purple-500 to-pink-600 text-white border-0">
-          <div className="flex items-center justify-between mb-2">
-            <CheckCircle2 className="w-8 h-8 opacity-80" />
-            <span className="text-3xl font-bold">{stats.deliveredOrders}</span>
+        <Card className="p-6 border border-slate-200 shadow-sm bg-white">
+          <div className="flex flex-col gap-1">
+            <span className="text-sm font-medium text-slate-500">
+              Delivered
+            </span>
+            <div className="flex items-center justify-between">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">
+                {stats.deliveredOrders}
+              </span>
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <CheckCircle2 className="w-4 h-4 text-purple-600" />
+              </div>
+            </div>
           </div>
-          <p className="text-purple-100">Delivered</p>
         </Card>
       </div>
 
@@ -82,33 +112,31 @@ export default async function DashboardPage() {
             {pendingOrders.map((order) => (
               <Card
                 key={order.id}
-                className="p-4 border-l-4 border-l-orange-500"
+                className="p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all bg-white"
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-mono text-sm text-muted-foreground">
-                    #{order.orderIdString.slice(-6)}
-                  </span>
-                  <Badge className="flex items-center gap-1">
-                    {orderTypeIcon(order.type)}
-                    {order.type.replace("_", " ")}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-medium text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                      #{order.orderIdString.slice(-4)}
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="font-normal text-slate-600 bg-white"
+                    >
+                      {order.type.replace("_", " ")}
+                    </Badge>
+                  </div>
+                  <Badge className="bg-orange-50 text-orange-700 hover:bg-orange-100 border-orange-100">
+                    Pending
                   </Badge>
                 </div>
 
-                <h3 className="font-bold">{order.customerName}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {order.customerMobile}
-                </p>
-
-                {order.tableNumber && (
-                  <p className="text-sm mt-1">Table: {order.tableNumber}</p>
-                )}
-
-                <div className="mt-3 pt-3 border-t">
-                  <p className="text-sm text-muted-foreground mb-1">
-                    {order.items.length} items
-                  </p>
-                  <p className="font-bold text-lg text-orange-600">
-                    ₹{order.totalAmount}
+                <div className="mb-4">
+                  <h3 className="font-semibold text-slate-900">
+                    {order.customerName}
+                  </h3>
+                  <p className="text-sm text-slate-500">
+                    {order.items.length} items • ₹{order.totalAmount}
                   </p>
                 </div>
               </Card>

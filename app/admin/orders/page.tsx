@@ -75,10 +75,10 @@ export default function OrdersPage() {
     filter === "ALL" ? orders : orders.filter((o) => o.status === filter);
 
   const statusColors = {
-    PENDING: "bg-yellow-100 text-yellow-800",
-    ACCEPTED: "bg-blue-100 text-blue-800",
-    REJECTED: "bg-red-100 text-red-800",
-    DELIVERED: "bg-green-100 text-green-800",
+    PENDING: "bg-yellow-50 text-yellow-700 border-yellow-200 border",
+    ACCEPTED: "bg-blue-50 text-blue-700 border-blue-200 border",
+    REJECTED: "bg-red-50 text-red-700 border-red-200 border",
+    DELIVERED: "bg-green-50 text-green-700 border-green-200 border",
   };
 
   const orderTypeIcon = (type: string) => {
@@ -144,7 +144,10 @@ export default function OrdersPage() {
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <Card key={order.id} className="p-4">
+            <Card
+              key={order.id}
+              className="p-4 border border-slate-200 shadow-sm bg-white hover:shadow-md transition-all"
+            >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">

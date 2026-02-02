@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { getRestaurantProfile } from "@/lib/actions/menu";
 import { updateRestaurantProfile } from "@/lib/actions/seller";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { Save, Loader2, ToggleLeft, ToggleRight } from "lucide-react";
 
 type Profile = Awaited<ReturnType<typeof getRestaurantProfile>>;
@@ -34,6 +35,7 @@ export default function SettingsPage() {
         openTime: profile.openTime,
         closeTime: profile.closeTime,
         isOpen: profile.isOpen,
+        paymentQrCode: profile.paymentQrCode || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -59,162 +61,252 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-6">Restaurant Settings</h1>
-
-      {/* Open/Close Toggle */}
-      <Card className="p-4 mb-6 flex items-center justify-between">
+    <div className="p-6 max-w-6xl mx-auto space-y-8">
+      <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-bold">Restaurant Status</h3>
-          <p className="text-sm text-muted-foreground">
-            {profile.isOpen ? "Currently accepting orders" : "Currently closed"}
+          <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+            Settings
+          </h1>
+          <p className="text-slate-500 mt-2">
+            Manage your restaurant profile and operating hours
           </p>
         </div>
         <Button
-          variant="ghost"
+          onClick={handleSave}
+          disabled={isPending || saved}
           size="lg"
-          onClick={handleToggleOpen}
-          disabled={isPending}
-          className="gap-2"
+          className={`
+            min-w-[140px] font-semibold shadow-md transition-all
+            ${
+              saved
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-slate-900 hover:bg-slate-800"
+            }
+          `}
         >
-          {profile.isOpen ? (
-            <>
-              <ToggleRight className="w-8 h-8 text-green-600" />
-              <Badge className="bg-green-100 text-green-800">Open</Badge>
-            </>
+          {isPending ? (
+            <Loader2 className="w-5 h-5 animate-spin mr-2" />
+          ) : saved ? (
+            <span className="flex items-center">
+              <Save className="w-5 h-5 mr-2" /> Saved
+            </span>
           ) : (
-            <>
-              <ToggleLeft className="w-8 h-8 text-gray-400" />
-              <Badge variant="secondary">Closed</Badge>
-            </>
+            "Save Changes"
           )}
         </Button>
-      </Card>
+      </div>
 
-      {/* Profile Form */}
-      <Card className="p-6">
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Restaurant Name
-            </label>
-            <Input
-              value={profile.name}
-              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-            />
-          </div>
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* Left Column: Brand & Profile Identiy */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="p-6 border border-slate-200 shadow-sm bg-white">
+            <h2 className="text-lg font-semibold text-slate-900 mb-6 border-b border-slate-100 pb-4">
+              Restaurant Identity
+            </h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Display Name
+                </label>
+                <Input
+                  value={profile.name}
+                  onChange={(e) =>
+                    setProfile({ ...profile, name: e.target.value })
+                  }
+                  placeholder="e.g. Shivanya Restaurant"
+                  className="bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Owner Name
+                </label>
+                <Input
+                  value={profile.ownerName}
+                  onChange={(e) =>
+                    setProfile({ ...profile, ownerName: e.target.value })
+                  }
+                  placeholder="e.g. Swapnil Sharma"
+                  className="bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Contact Number
+                </label>
+                <Input
+                  value={profile.contact}
+                  onChange={(e) =>
+                    setProfile({ ...profile, contact: e.target.value })
+                  }
+                  placeholder="+91 98765 43210"
+                  className="bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+                />
+              </div>
 
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Owner Name
-            </label>
-            <Input
-              value={profile.ownerName}
-              onChange={(e) =>
-                setProfile({ ...profile, ownerName: e.target.value })
-              }
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Contact Number
-            </label>
-            <Input
-              value={profile.contact}
-              onChange={(e) =>
-                setProfile({ ...profile, contact: e.target.value })
-              }
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Address
-            </label>
-            <textarea
-              className="w-full border rounded-md px-3 py-2 min-h-[80px]"
-              value={profile.address}
-              onChange={(e) =>
-                setProfile({ ...profile, address: e.target.value })
-              }
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Banner Image URL
-            </label>
-            <Input
-              value={profile.bannerImage || ""}
-              onChange={(e) =>
-                setProfile({ ...profile, bannerImage: e.target.value })
-              }
-              placeholder="https://example.com/banner.jpg"
-            />
-          </div>
-
-          <div className="flex items-center justify-between p-3 border rounded-lg bg-slate-50">
-            <div>
-              <label className="font-medium">Auto-Accept Orders</label>
-              <p className="text-sm text-muted-foreground">
-                Automatically accept all incoming orders
-              </p>
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Restaurant Banner
+                </label>
+                <ImageUpload
+                  value={profile.bannerImage || ""}
+                  onChange={(url) =>
+                    setProfile({ ...profile, bannerImage: url })
+                  }
+                />
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Physical Address
+                </label>
+                <textarea
+                  className="w-full min-h-[100px] p-3 rounded-md border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all resize-y text-sm"
+                  value={profile.address}
+                  onChange={(e) =>
+                    setProfile({ ...profile, address: e.target.value })
+                  }
+                  placeholder="Complete street address for delivery purposes"
+                />
+              </div>
             </div>
-            <Button
-              variant={profile.autoAccept ? "default" : "outline"}
-              onClick={() =>
-                setProfile({ ...profile, autoAccept: !profile.autoAccept })
-              }
-              className={
-                profile.autoAccept ? "bg-green-600 hover:bg-green-700" : ""
-              }
-            >
-              {profile.autoAccept ? "Enabled" : "Disabled"}
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">
-                Opening Time
-              </label>
-              <Input
-                type="time"
-                value={profile.openTime}
-                onChange={(e) =>
-                  setProfile({ ...profile, openTime: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">
-                Closing Time
-              </label>
-              <Input
-                type="time"
-                value={profile.closeTime}
-                onChange={(e) =>
-                  setProfile({ ...profile, closeTime: e.target.value })
-                }
-              />
-            </div>
-          </div>
-
-          <Button
-            onClick={handleSave}
-            disabled={isPending}
-            className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-          >
-            {isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
-            {saved ? "Saved!" : "Save Changes"}
-          </Button>
+          </Card>
         </div>
-      </Card>
+
+        {/* Right Column: Operations & Status */}
+        <div className="space-y-6">
+          {/* Status Card */}
+          <Card
+            className={`p-6 border shadow-sm transition-all ${
+              profile.isOpen
+                ? "bg-green-50 border-green-100"
+                : "bg-white border-slate-200"
+            }`}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-slate-900">
+                Store Status
+              </h2>
+              <Badge
+                variant={profile.isOpen ? "default" : "secondary"}
+                className={
+                  profile.isOpen ? "bg-green-600 hover:bg-green-700" : ""
+                }
+              >
+                {profile.isOpen ? "OPEN" : "CLOSED"}
+              </Badge>
+            </div>
+            <p className="text-sm text-slate-600 mb-6">
+              {profile.isOpen
+                ? "Your store is currently online and accepting orders."
+                : "Your store is offline. Customers cannot place orders."}
+            </p>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleToggleOpen}
+              disabled={isPending}
+              className={`w-full font-bold border-2 ${
+                profile.isOpen
+                  ? "border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800"
+                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              {profile.isOpen ? (
+                <span className="flex items-center gap-2">
+                  <ToggleRight className="w-5 h-5" /> Switch to Offline
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <ToggleLeft className="w-5 h-5 text-slate-400" /> Switch to
+                  Online
+                </span>
+              )}
+            </Button>
+          </Card>
+
+          {/* Operations Card */}
+          <Card className="p-6 border border-slate-200 shadow-sm bg-white">
+            <h2 className="text-lg font-semibold text-slate-900 mb-4">
+              Operations
+            </h2>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Payment QR Code
+                </label>
+                <ImageUpload
+                  value={profile.paymentQrCode || ""}
+                  onChange={(url) =>
+                    setProfile({ ...profile, paymentQrCode: url })
+                  }
+                />
+                <p className="text-xs text-slate-500">
+                  Upload your UPI QR Code to accept payments directly.
+                </p>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
+                <div className="space-y-0.5">
+                  <span className="font-medium text-sm text-slate-900 block">
+                    Auto-Accept Orders
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    Skip manual approval
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant={profile.autoAccept ? "default" : "outline"}
+                  onClick={() =>
+                    setProfile({ ...profile, autoAccept: !profile.autoAccept })
+                  }
+                  className={
+                    profile.autoAccept
+                      ? "bg-blue-600 hover:bg-blue-700 h-8"
+                      : "h-8"
+                  }
+                >
+                  {profile.autoAccept ? "On" : "Off"}
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-slate-700 block border-b border-slate-100 pb-2">
+                  Business Hours
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                      Opens At
+                    </span>
+                    <Input
+                      type="time"
+                      value={profile.openTime}
+                      onChange={(e) =>
+                        setProfile({ ...profile, openTime: e.target.value })
+                      }
+                      className="bg-slate-50 border-slate-200"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-xs text-slate-500 font-medium uppercase tracking-wider">
+                      Closes At
+                    </span>
+                    <Input
+                      type="time"
+                      value={profile.closeTime}
+                      onChange={(e) =>
+                        setProfile({ ...profile, closeTime: e.target.value })
+                      }
+                      className="bg-slate-50 border-slate-200"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

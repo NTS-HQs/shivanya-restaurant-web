@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { getAllMenuItems, getMenuWithCategories } from "@/lib/actions/menu";
 import {
   toggleMenuItem,
@@ -40,6 +41,7 @@ export default function MenuManagementPage() {
     name: "",
     description: "",
     price: "",
+    image: "",
     isVeg: true,
     categoryId: "",
   });
@@ -73,6 +75,7 @@ export default function MenuManagementPage() {
         name: newItem.name,
         description: newItem.description || undefined,
         price: parseFloat(newItem.price),
+        image: newItem.image || undefined,
         isVeg: newItem.isVeg,
         categoryId: newItem.categoryId,
       });
@@ -80,6 +83,7 @@ export default function MenuManagementPage() {
         name: "",
         description: "",
         price: "",
+        image: "",
         isVeg: true,
         categoryId: "",
       });
@@ -98,6 +102,7 @@ export default function MenuManagementPage() {
         name: editingItem.name,
         description: editingItem.description || undefined,
         price: Number(editingItem.price),
+        image: editingItem.image || undefined,
         isVeg: editingItem.isVeg,
         categoryId: editingItem.categoryId,
       });
@@ -165,6 +170,16 @@ export default function MenuManagementPage() {
         <Card className="p-4 mb-6 border-2 border-dashed border-orange-300">
           <h3 className="font-bold mb-3">Add New Menu Item</h3>
           <div className="grid gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Item Image
+              </label>
+              <ImageUpload
+                value={newItem.image}
+                onChange={(url) => setNewItem({ ...newItem, image: url })}
+              />
+            </div>
+
             <Input
               placeholder="Item Name *"
               value={newItem.name}
@@ -235,9 +250,21 @@ export default function MenuManagementPage() {
       {/* Edit Item Modal */}
       {editingItem && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="p-6 w-full max-w-lg bg-white">
+          <Card className="p-6 w-full max-w-lg bg-white overflow-y-auto max-h-[90vh]">
             <h3 className="font-bold text-lg mb-4">Edit Menu Item</h3>
             <div className="grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Item Image
+                </label>
+                <ImageUpload
+                  value={editingItem.image || ""}
+                  onChange={(url) =>
+                    setEditingItem({ ...editingItem, image: url })
+                  }
+                />
+              </div>
+
               <Input
                 placeholder="Item Name *"
                 value={editingItem.name}
@@ -336,44 +363,65 @@ export default function MenuManagementPage() {
                 {categoryItems.map((item) => (
                   <Card
                     key={item.id}
-                    className={`p-4 ${!item.isAvailable ? "opacity-60" : ""}`}
+                    className={`p-4 border border-slate-200 shadow-sm bg-white hover:shadow-md transition-all ${
+                      !item.isAvailable ? "opacity-60 bg-slate-50" : ""
+                    }`}
                   >
                     <div className="flex items-start justify-between">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          {item.isVeg ? (
-                            <Badge
-                              variant="outline"
-                              className="border-green-500 text-green-600"
-                            >
-                              <Leaf className="w-3 h-3" />
-                            </Badge>
+                      <div className="flex gap-3">
+                        {/* Thumbnail */}
+                        <div className="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                          {item.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
-                            <Badge
-                              variant="outline"
-                              className="border-red-500 text-red-600"
-                            >
-                              <Drumstick className="w-3 h-3" />
-                            </Badge>
+                            <div className="w-full h-full flex items-center justify-center text-xl">
+                              🍲
+                            </div>
                           )}
-                          <span className="font-bold">{item.name}</span>
                         </div>
-                        {item.description && (
-                          <p className="text-sm text-muted-foreground mr-1">
-                            {item.description}
+
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            {item.isVeg ? (
+                              <Badge
+                                variant="outline"
+                                className="border-green-500 text-green-600"
+                              >
+                                <Leaf className="w-3 h-3" />
+                              </Badge>
+                            ) : (
+                              <Badge
+                                variant="outline"
+                                className="border-red-500 text-red-600"
+                              >
+                                <Drumstick className="w-3 h-3" />
+                              </Badge>
+                            )}
+                            <span className="font-bold">{item.name}</span>
+                          </div>
+                          {item.description && (
+                            <p className="text-sm text-muted-foreground mr-1 line-clamp-1">
+                              {item.description}
+                            </p>
+                          )}
+                          <p className="font-bold text-orange-600 mt-1">
+                            ₹{item.price}
                           </p>
-                        )}
-                        <p className="font-bold text-orange-600 mt-1">
-                          ₹{item.price}
-                        </p>
+                        </div>
                       </div>
 
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 flex-col">
                         <Button
                           variant="ghost"
                           size="icon"
                           onClick={() => setEditingItem(item)}
                           title="Edit"
+                          className="h-8 w-8"
                         >
                           <Pencil className="w-4 h-4 text-blue-600" />
                         </Button>
@@ -388,6 +436,7 @@ export default function MenuManagementPage() {
                               ? "Mark Unavailable"
                               : "Mark Available"
                           }
+                          className="h-8 w-8"
                         >
                           {item.isAvailable ? (
                             <ToggleRight className="w-6 h-6 text-green-600" />
@@ -400,7 +449,7 @@ export default function MenuManagementPage() {
                           size="icon"
                           onClick={() => handleDeleteItem(item.id)}
                           title="Delete"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
