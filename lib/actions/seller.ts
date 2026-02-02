@@ -1,0 +1,80 @@
+"use server";
+
+import { prisma } from "@/lib/db";
+
+export async function updateRestaurantProfile(data: {
+  name?: string;
+  ownerName?: string;
+  contact?: string;
+  address?: string;
+  openTime?: string;
+  closeTime?: string;
+  isOpen?: boolean;
+  bannerImage?: string;
+  autoAccept?: boolean;
+}) {
+  const profile = await prisma.restaurantProfile.findFirst();
+  if (!profile) throw new Error("Restaurant profile not found");
+
+  const updated = await prisma.restaurantProfile.update({
+    where: { id: profile.id },
+    data,
+  });
+  return updated;
+}
+
+export async function toggleMenuItem(itemId: string, isAvailable: boolean) {
+  const item = await prisma.menuItem.update({
+    where: { id: itemId },
+    data: { isAvailable },
+  });
+  return item;
+}
+
+export async function createMenuItem(data: {
+  name: string;
+  description?: string;
+  price: number;
+  image?: string;
+  isVeg: boolean;
+  categoryId: string;
+}) {
+  const item = await prisma.menuItem.create({ data });
+  return item;
+}
+
+export async function updateMenuItem(
+  itemId: string,
+  data: {
+    name?: string;
+    description?: string;
+    price?: number;
+    image?: string;
+    isVeg?: boolean;
+    isAvailable?: boolean;
+    categoryId?: string;
+  }
+) {
+  const item = await prisma.menuItem.update({
+    where: { id: itemId },
+    data,
+  });
+  return item;
+}
+
+export async function deleteMenuItem(itemId: string) {
+  await prisma.menuItem.delete({ where: { id: itemId } });
+  return { success: true };
+}
+
+export async function createCategory(name: string) {
+  const category = await prisma.category.create({ data: { name } });
+  return category;
+}
+
+export async function getCategories() {
+  const categories = await prisma.category.findMany({
+    orderBy: { sortOrder: "asc" },
+  });
+  return categories;
+}

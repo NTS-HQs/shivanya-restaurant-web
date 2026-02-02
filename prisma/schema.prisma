@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+model RestaurantProfile {
+  id          String   @id @default(uuid())
+  name        String
+  ownerName   String
+  contact     String
+  address     String   @db.Text
+  bannerImage String?  // URL to banner image
+  openTime    String // e.g., "10:00"
+  closeTime   String // e.g., "22:00"
+  isOpen      Boolean  @default(true)
+  autoAccept  Boolean  @default(false) // Auto-accept all orders
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Category {
+  id        String     @id @default(uuid())
+  name      String
+  sortOrder Int        @default(autoincrement())
+  items     MenuItem[]
+  createdAt DateTime   @default(now())
+}
+
+model MenuItem {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  price       Float
+  image       String?
+  isVeg       Boolean     @default(true)
+  isAvailable Boolean     @default(true)
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  OrderItems  OrderItem[]
+}
+
+model Order {
+  id              String      @id @default(uuid())
+  orderIdString   String      @unique @default(cuid())
+  customerName    String
+  customerMobile  String
+  type            OrderType
+  status          OrderStatus @default(PENDING)
+  tableNumber     String?
+  address         String?     @db.Text
+  pickupTime      String?     // For takeaway orders
+  rejectionReason String?     // Reason if rejected
+  totalAmount     Float
+  items           OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model OrderItem {
+  id         String   @id @default(uuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id])
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  name       String // Snapshot in case name changes
+  price      Float // Snapshot
+  quantity   Int
+}
+
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+  DELIVERY
+}
+
+enum OrderStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  DELIVERED
+}
