@@ -35,7 +35,9 @@ export default function SettingsPage() {
         openTime: profile.openTime,
         closeTime: profile.closeTime,
         isOpen: profile.isOpen,
-        paymentQrCode: profile.paymentQrCode || undefined,
+        // isOpen removed (duplicate)
+        // paymentQrCode removed
+        upiId: profile.upiId || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -231,20 +233,25 @@ export default function SettingsPage() {
             </h2>
 
             <div className="space-y-6">
+              {/* Payment QR Code section removed */}
+
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Payment QR Code
+                  UPI ID (VPA)
                 </label>
-                <ImageUpload
-                  value={profile.paymentQrCode || ""}
-                  onChange={(url) =>
-                    setProfile({ ...profile, paymentQrCode: url })
+                <Input
+                  value={profile.upiId || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, upiId: e.target.value })
                   }
+                  placeholder="e.g. merchant@oksbi"
+                  className="bg-slate-50 border-slate-200"
                 />
                 <p className="text-xs text-slate-500">
-                  Upload your UPI QR Code to accept payments directly.
+                  Enter your VPA to enable "Pay with UPI App" button.
                 </p>
               </div>
+
               <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-100">
                 <div className="space-y-0.5">
                   <span className="font-medium text-sm text-slate-900 block">

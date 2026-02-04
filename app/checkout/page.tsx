@@ -31,6 +31,7 @@ import {
   Banknote,
   Info,
 } from "lucide-react";
+import QRCode from "react-qr-code";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getRestaurantProfile } from "@/lib/actions/menu";
@@ -42,7 +43,9 @@ export default function CheckoutPage() {
   const [shopSettings, setShopSettings] = useState<{
     open: string;
     close: string;
+    // close removed (duplicate)
     paymentQrCode?: string;
+    upiId?: string;
   } | null>(null);
 
   useEffect(() => {
@@ -52,6 +55,7 @@ export default function CheckoutPage() {
           open: data.openTime,
           close: data.closeTime,
           paymentQrCode: data.paymentQrCode || undefined,
+          upiId: data.upiId || undefined,
         });
       }
     });
@@ -102,6 +106,15 @@ export default function CheckoutPage() {
       setShowPayment(true);
     }
   };
+
+  // Generate a unique transaction reference for UPI
+  // This helps avoid "duplicate transaction" errors and makes the intent unique
+  const [txnId, setTxnId] = useState("");
+
+  useEffect(() => {
+    // Generate a simple unique ID: timestamp + random suffix
+    setTxnId(`TRX${Date.now()}${Math.floor(Math.random() * 1000)}`);
+  }, [items]); // Regenerate if items change (amount changes)
 
   const handleConfirmPayment = async () => {
     setIsPlacing(true);
@@ -514,96 +527,129 @@ export default function CheckoutPage() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: 100, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-[2.5rem] p-8 w-full max-w-md shadow-2xl relative overflow-hidden"
+              className="bg-white rounded-t-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8 w-full max-w-md shadow-2xl relative overflow-hidden"
             >
               {/* Decorative Header */}
-              <div className="absolute top-0 left-0 right-0 h-32 bg-orange-50 rounded-b-[50%] -mt-16 z-0" />
+              <div className="absolute top-0 left-0 right-0 h-24 bg-orange-50 rounded-b-[50%] -mt-12 z-0" />
 
-              <div className="relative z-10 text-center mb-8 pt-4">
-                <h2 className="text-2xl font-black text-slate-900 mb-1">
+              <div className="relative z-10 text-center mb-4 pt-2">
+                <h2 className="text-xl font-black text-slate-900 leading-none">
                   Payment
                 </h2>
-                <p className="text-slate-500 font-medium">
+                <p className="text-xs text-slate-500 font-medium mt-1">
                   Select a payment method
                 </p>
               </div>
 
               {/* Payment Methods */}
-              <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
+              <div className="grid grid-cols-2 gap-3 mb-4 relative z-10">
                 <button
                   onClick={() => setPaymentMethod("UPI")}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
+                  className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${
                     paymentMethod === "UPI"
                       ? "border-orange-500 bg-orange-50 text-orange-700"
                       : "border-slate-100 bg-white text-slate-500 hover:bg-slate-50"
                   }`}
                 >
-                  <QrCode className="w-8 h-8" />
-                  <span className="font-bold text-sm">UPI / QR</span>
+                  <QrCode className="w-6 h-6" />
+                  <span className="font-bold text-xs">UPI / QR</span>
                 </button>
                 <button
                   onClick={() => setPaymentMethod("CASH")}
-                  className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${
+                  className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${
                     paymentMethod === "CASH"
                       ? "border-orange-500 bg-orange-50 text-orange-700"
                       : "border-slate-100 bg-white text-slate-500 hover:bg-slate-50"
                   }`}
                 >
-                  <Banknote className="w-8 h-8" />
-                  <span className="font-bold text-sm">Cash</span>
+                  <Banknote className="w-6 h-6" />
+                  <span className="font-bold text-xs">Cash</span>
                 </button>
               </div>
 
               {paymentMethod === "UPI" ? (
-                <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl p-6 flex flex-col items-center mb-8 relative z-10">
-                  <div className="w-48 h-48 bg-white rounded-2xl shadow-sm p-2 mb-4 flex items-center justify-center overflow-hidden">
-                    {shopSettings?.paymentQrCode ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={shopSettings.paymentQrCode}
-                        alt="Payment QR Code"
-                        className="w-full h-full object-cover"
-                      />
+                <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center mb-4 relative z-10">
+                  {/* Amount Display */}
+                  <div className="mb-3 text-center">
+                    <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mb-0.5">
+                      Total Payable
+                    </p>
+                    <p className="text-2xl font-black text-slate-900">
+                      ₹{getTotalAmount()}
+                    </p>
+                  </div>
+
+                  <div className="w-40 h-40 bg-white rounded-xl shadow-sm p-3 mb-3 flex items-center justify-center overflow-hidden border border-slate-100">
+                    {shopSettings?.upiId ? (
+                      <div className="w-full h-full">
+                        <QRCode
+                          size={160}
+                          style={{
+                            height: "auto",
+                            maxWidth: "100%",
+                            width: "100%",
+                          }}
+                          value={`upi://pay?pa=${shopSettings.upiId}&pn=Shivanya&cu=INR`}
+                          viewBox={`0 0 256 256`}
+                        />
+                      </div>
                     ) : (
                       <QrCode className="w-full h-full text-slate-900 p-4" />
                     )}
                   </div>
-                  <p className="font-bold text-slate-900">Scan to Pay</p>
-                  <p className="text-sm text-slate-400">Use any UPI app</p>
+
+                  {shopSettings?.upiId && (
+                    <a
+                      href={`upi://pay?pa=${shopSettings.upiId}&pn=Shivanya&cu=INR`}
+                      className="w-full"
+                    >
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-4 font-bold text-sm shadow-md shadow-blue-200 transform transition-transform active:scale-95 h-auto">
+                        Pay via UPI App
+                      </Button>
+                    </a>
+                  )}
+                  <p className="text-xs text-slate-400 mt-2 text-center">
+                    Tap above to pay using GPay / PhonePe / Paytm
+                  </p>
                 </div>
               ) : (
-                <div className="bg-slate-50 rounded-3xl p-8 mb-8 text-center relative z-10">
-                  <p className="text-slate-500 mb-2">
+                <div className="bg-slate-50 rounded-2xl p-6 mb-6 text-center relative z-10">
+                  <p className="text-sm text-slate-500 mb-1">
                     Please pay cash at the counter
                   </p>
-                  <p className="text-2xl font-black text-slate-900">
+                  <p className="text-lg font-black text-slate-900">
                     Counter #1
                   </p>
                 </div>
               )}
 
-              <div className="space-y-3 relative z-10">
-                <Button
-                  onClick={handleConfirmPayment}
-                  disabled={isPlacing}
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white py-7 text-lg font-bold rounded-2xl shadow-lg shadow-orange-200"
-                >
-                  {isPlacing ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Wait a moment...
-                    </>
-                  ) : (
-                    `Pay ₹${getTotalAmount()}`
-                  )}
-                </Button>
+              <div className="space-y-2 relative z-10">
+                {paymentMethod === "CASH" && (
+                  <Button
+                    onClick={handleConfirmPayment}
+                    disabled={isPlacing}
+                    className="w-full bg-orange-600 hover:bg-orange-700 text-white py-5 text-base font-bold rounded-xl shadow-lg shadow-orange-200 h-auto"
+                  >
+                    {isPlacing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Wait...
+                      </>
+                    ) : (
+                      `Place Order (Cash)`
+                    )}
+                  </Button>
+                )}
 
                 <Button
                   variant="ghost"
                   onClick={() => setShowPayment(false)}
-                  className="w-full text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-xl"
-                >
-                  Cancel Details
+                  className="w-full text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-lg text-xs h-8"
+                >-ICD
+PetBERT-ICD is a multi label classification model based on the PetBERT architecture further trained on over 500 million additional words from first-opinion veterinary clinicians from across the UK. PetBERT-ICD was trained on a multi-label dataset of the 20 'chapters' of the International Classification of Disease (ICD)
+
+
+                  Cancel
                 </Button>
               </div>
             </motion.div>

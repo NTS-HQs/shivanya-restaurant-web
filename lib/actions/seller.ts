@@ -11,7 +11,9 @@ export async function updateRestaurantProfile(data: {
   closeTime?: string;
   isOpen?: boolean;
   bannerImage?: string;
+  // bannerImage removed (duplicate)
   paymentQrCode?: string;
+  upiId?: string;
   autoAccept?: boolean;
 }) {
   const profile = await prisma.restaurantProfile.findFirst();

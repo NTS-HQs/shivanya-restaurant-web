@@ -15,7 +15,9 @@ import {
   UtensilsCrossed,
   RefreshCw,
   Loader2,
+  Printer,
 } from "lucide-react";
+import PrintBillModal from "@/components/PrintBillModal";
 
 type Order = Awaited<ReturnType<typeof getAllOrders>>[0];
 
@@ -27,6 +29,7 @@ export default function OrdersPage() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [printOrder, setPrintOrder] = useState<Order | null>(null);
 
   const fetchOrders = async () => {
     setIsRefreshing(true);
@@ -266,6 +269,16 @@ export default function OrdersPage() {
                     Mark Delivered
                   </Button>
                 )}
+
+                {order.status === "DELIVERED" && (
+                  <Button
+                    onClick={() => setPrintOrder(order)}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Printer className="w-4 h-4 mr-1" />
+                    Print Bill
+                  </Button>
+                )}
               </div>
             </Card>
           ))}
@@ -303,6 +316,14 @@ export default function OrdersPage() {
             </div>
           </Card>
         </div>
+      )}
+      {/* Print Bill Modal */}
+      {printOrder && (
+        <PrintBillModal
+          order={printOrder}
+          isOpen={!!printOrder}
+          onClose={() => setPrintOrder(null)}
+        />
       )}
     </div>
   );

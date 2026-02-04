@@ -26,11 +26,17 @@ export async function placeOrder(input: PlaceOrderInput) {
     0
   );
 
+  const profile = await prisma.restaurantProfile.findFirst();
+  const initialStatus = profile?.autoAccept
+    ? OrderStatus.DELIVERED
+    : OrderStatus.PENDING;
+
   const order = await prisma.order.create({
     data: {
       customerName: input.customerName,
       customerMobile: input.customerMobile,
       type: input.type as OrderType,
+      status: initialStatus,
       tableNumber: input.tableNumber,
       address: input.address,
       pickupTime: input.pickupTime,
