@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
+import { revalidatePath } from "next/cache";
 
 export async function updateRestaurantProfile(data: {
   name?: string;
@@ -23,6 +24,9 @@ export async function updateRestaurantProfile(data: {
     where: { id: profile.id },
     data,
   });
+  revalidatePath("/");
+  revalidatePath("/menu");
+  revalidatePath("/checkout");
   return updated;
 }
 
@@ -31,6 +35,8 @@ export async function toggleMenuItem(itemId: string, isAvailable: boolean) {
     where: { id: itemId },
     data: { isAvailable },
   });
+  revalidatePath("/menu");
+  revalidatePath("/admin/pos");
   return item;
 }
 
@@ -43,6 +49,8 @@ export async function createMenuItem(data: {
   categoryId: string;
 }) {
   const item = await prisma.menuItem.create({ data });
+  revalidatePath("/menu");
+  revalidatePath("/admin/pos");
   return item;
 }
 
@@ -62,16 +70,22 @@ export async function updateMenuItem(
     where: { id: itemId },
     data,
   });
+  revalidatePath("/menu");
+  revalidatePath("/admin/pos");
   return item;
 }
 
 export async function deleteMenuItem(itemId: string) {
   await prisma.menuItem.delete({ where: { id: itemId } });
+  revalidatePath("/menu");
+  revalidatePath("/admin/pos");
   return { success: true };
 }
 
 export async function createCategory(name: string) {
   const category = await prisma.category.create({ data: { name } });
+  revalidatePath("/menu");
+  revalidatePath("/admin/pos");
   return category;
 }
 

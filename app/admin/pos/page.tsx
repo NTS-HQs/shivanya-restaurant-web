@@ -90,7 +90,7 @@ export default function POSPage() {
         tableNumber: tableNumber || undefined,
         items: cart,
       });
-      if (result.success) {
+      if (result.success && result.orderId) {
         setOrderSuccess(result.orderId);
         setCart([]);
         setCustomerName("");
