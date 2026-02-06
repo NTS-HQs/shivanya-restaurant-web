@@ -30,6 +30,7 @@ import {
   CreditCard,
   Banknote,
   Info,
+  ExternalLink,
 } from "lucide-react";
 import QRCode from "react-qr-code";
 import Link from "next/link";
@@ -85,7 +86,15 @@ export default function CheckoutPage() {
   const [customerName, setCustomerName] = useState("");
   const [customerMobile, setCustomerMobile] = useState("");
   const [tableNumber, setTableNumber] = useState("");
-  const [address, setAddress] = useState("");
+  // Structured Address State
+  const [flat, setFlat] = useState("");
+  const [building, setBuilding] = useState("Migsun Twiinz");
+  const [city] = useState("Greater Noida");
+  const [state] = useState("Uttar Pradesh");
+  const [country] = useState("India");
+  const [landmark, setLandmark] = useState("");
+  const [pincode] = useState("201310");
+
   const [pickupTime, setPickupTime] = useState("");
   const [showPayment, setShowPayment] = useState(false);
   const [isPlacing, setIsPlacing] = useState(false);
@@ -98,7 +107,8 @@ export default function CheckoutPage() {
     orderType &&
     (orderType !== "DINE_IN" || tableNumber.trim()) &&
     (orderType !== "TAKEAWAY" || pickupTime.trim()) &&
-    (orderType !== "DELIVERY" || address.trim()) &&
+    (orderType !== "DELIVERY" ||
+      (building.trim() && flat.trim() && pincode.trim())) &&
     (orderType !== "TAKEAWAY" || isValidPickupTime(pickupTime));
 
   const handleProceedToPayment = () => {
@@ -124,7 +134,12 @@ export default function CheckoutPage() {
         customerMobile,
         type: orderType!,
         tableNumber: orderType === "DINE_IN" ? tableNumber : undefined,
-        address: orderType === "DELIVERY" ? address : undefined,
+        address:
+          orderType === "DELIVERY"
+            ? `Flat ${flat}, ${building}${
+                landmark ? ", Near " + landmark : ""
+              }, ${city}, ${state} - ${pincode}, ${country}`
+            : undefined,
         pickupTime: orderType === "TAKEAWAY" ? pickupTime : undefined,
         items: items.map((i) => ({
           id: i.id,
@@ -393,15 +408,115 @@ export default function CheckoutPage() {
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="relative group overflow-hidden"
+                    className="space-y-3 pt-2"
                   >
-                    <MapPin className="absolute left-4 top-4 w-5 h-5 text-slate-400 group-focus-within:text-orange-500" />
-                    <textarea
-                      placeholder="Full Delivery Address"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="w-full pl-12 pr-4 py-4 h-32 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 resize-none focus:outline-none"
-                    />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Building Selection */}
+                      <div className="relative group">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 mb-1 block">
+                          Building
+                        </label>
+                        <div className="relative">
+                          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors z-10" />
+                          <select
+                            value={building}
+                            onChange={(e) => setBuilding(e.target.value)}
+                            className="w-full pl-10 pr-4 h-12 rounded-xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 appearance-none bg-no-repeat bg-[right_1rem_center] cursor-pointer text-sm"
+                            style={{
+                              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
+                              backgroundSize: "1rem",
+                            }}
+                          >
+                            <option value="Migsun Twiinz">Migsun Twiinz</option>
+                            <option value="Migsun Vilaasa">
+                              Migsun Vilaasa
+                            </option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Flat Number */}
+                      <div className="relative group">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 mb-1 block">
+                          Flat / House No.
+                        </label>
+                        <div className="relative">
+                          <Hash className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+                          <Input
+                            placeholder="e.g. A-101"
+                            value={flat}
+                            onChange={(e) => setFlat(e.target.value)}
+                            className="pl-10 h-12 rounded-xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 text-sm"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Landmark */}
+                    <div className="relative group">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 mb-1 block">
+                        Landmark (Optional)
+                      </label>
+                      <div className="relative">
+                        <Info className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+                        <Input
+                          placeholder="e.g. Near Club House"
+                          value={landmark}
+                          onChange={(e) => setLandmark(e.target.value)}
+                          className="pl-10 h-12 rounded-xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="relative group">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 mb-1 block">
+                          Pincode
+                        </label>
+                        <Input
+                          value={pincode}
+                          readOnly
+                          className="h-12 rounded-xl bg-slate-100 border-none ring-1 ring-slate-200 text-slate-500 font-bold text-sm cursor-not-allowed"
+                        />
+                      </div>
+
+                      {/* City (Read-only) */}
+                      <div className="relative group">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 mb-1 block">
+                          City
+                        </label>
+                        <Input
+                          value={city}
+                          readOnly
+                          className="h-12 rounded-xl bg-slate-100 border-none ring-1 ring-slate-200 text-slate-500 font-bold text-sm cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pb-2">
+                      {/* State (Read-only) */}
+                      <div className="relative group">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 mb-1 block">
+                          State
+                        </label>
+                        <Input
+                          value={state}
+                          readOnly
+                          className="h-12 rounded-xl bg-slate-100 border-none ring-1 ring-slate-200 text-slate-500 font-bold text-sm cursor-not-allowed"
+                        />
+                      </div>
+                      {/* Country (Read-only) */}
+                      <div className="relative group">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase ml-4 mb-1 block">
+                          Country
+                        </label>
+                        <Input
+                          value={country}
+                          readOnly
+                          className="h-12 rounded-xl bg-slate-100 border-none ring-1 ring-slate-200 text-slate-500 font-bold text-sm cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -485,6 +600,22 @@ export default function CheckoutPage() {
               </div>
             </div>
           </section>
+
+          {/* Developer Footer */}
+          <footer className="mt-8 mb-4 text-center space-y-2">
+            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+              Developed by{" "}
+              <a
+                href="https://www.nagarjunatechsolutions.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-orange-500 hover:text-orange-600 transition-colors inline-flex items-center gap-1"
+              >
+                Nagarjuna tech solutions Pvt Ltd
+                <ExternalLink className="w-2.5 h-2.5" />
+              </a>
+            </p>
+          </footer>
         </div>
       </div>
 
@@ -645,11 +776,13 @@ export default function CheckoutPage() {
                   variant="ghost"
                   onClick={() => setShowPayment(false)}
                   className="w-full text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-lg text-xs h-8"
-                >-ICD
-PetBERT-ICD is a multi label classification model based on the PetBERT architecture further trained on over 500 million additional words from first-opinion veterinary clinicians from across the UK. PetBERT-ICD was trained on a multi-label dataset of the 20 'chapters' of the International Classification of Disease (ICD)
-
-
-                  Cancel
+                >
+                  -ICD PetBERT-ICD is a multi label classification model based
+                  on the PetBERT architecture further trained on over 500
+                  million additional words from first-opinion veterinary
+                  clinicians from across the UK. PetBERT-ICD was trained on a
+                  multi-label dataset of the 20 'chapters' of the International
+                  Classification of Disease (ICD) Cancel
                 </Button>
               </div>
             </motion.div>

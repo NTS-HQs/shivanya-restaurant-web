@@ -233,6 +233,17 @@ export default function PrintBillModal({
       <span>Phone:</span>
       <span>${formatPhone(order.customerMobile)}</span>
     </div>
+    ${
+      order.type === "DELIVERY" && order.address
+        ? `
+        <div class="divider"></div>
+        <div style="font-size: 10px; margin-top: 4px;">
+          <strong>DELIVERY ADDRESS:</strong><br/>
+          ${order.address}
+        </div>
+        `
+        : ""
+    }
   </div>
 
   <table class="items-table">
@@ -336,6 +347,16 @@ export default function PrintBillModal({
               <span>Customer:</span>
               <span>{order.customerName}</span>
             </div>
+            {order.type === "DELIVERY" && order.address && (
+              <div className="mt-2 pt-2 border-t border-dashed border-gray-200">
+                <span className="text-[10px] font-bold text-gray-400 block uppercase mb-1">
+                  Delivery Address:
+                </span>
+                <p className="text-[10px] leading-tight text-gray-600">
+                  {order.address}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Items */}

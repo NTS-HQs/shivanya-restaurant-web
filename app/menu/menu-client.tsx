@@ -23,6 +23,7 @@ import {
   Bell,
   ChevronRight,
   MapPin,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -55,7 +56,7 @@ export function MenuClient({
   categories: Category[];
   profile: Profile;
 }) {
-  const [activeCategory, setActiveCategory] = useState(categories[0]?.id || "");
+  const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Removed local orderType state in favor of global store state
@@ -86,10 +87,14 @@ export function MenuClient({
   };
 
   const filteredCategory = categories.find((c) => c.id === activeCategory);
-  const displayItems =
-    filteredCategory?.items.filter((item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    ) || [];
+
+  const allItems = categories.flatMap((c) => c.items);
+  const itemsToFilter =
+    activeCategory === "all" ? allItems : filteredCategory?.items || [];
+
+  const displayItems = itemsToFilter.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="flex h-screen bg-[#F8F9FD] font-sans text-slate-800 overflow-hidden selection:bg-orange-100">
@@ -189,6 +194,19 @@ export function MenuClient({
                 </h3>
               </div>
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                <button
+                  onClick={() => setActiveCategory("all")}
+                  className={`
+                           flex items-center gap-2 px-4 py-2 rounded-full font-bold whitespace-nowrap transition-all text-sm
+                           ${
+                             activeCategory === "all"
+                               ? "bg-slate-900 text-white shadow-md shadow-slate-200"
+                               : "bg-white text-slate-500 hover:bg-slate-100 border border-slate-100"
+                           }
+                        `}
+                >
+                  All
+                </button>
                 {categories.map((cat) => (
                   <button
                     key={cat.id}
@@ -212,7 +230,9 @@ export function MenuClient({
             <div className="mb-6">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-xl font-bold text-slate-900">
-                  {filteredCategory?.name} Menu
+                  {activeCategory === "all"
+                    ? "Full Menu"
+                    : filteredCategory?.name + " Menu"}
                 </h3>
                 <span className="text-slate-400 font-medium text-sm">
                   {displayItems.length} items found
@@ -295,6 +315,26 @@ export function MenuClient({
                 )}
               </div>
             </div>
+
+            {/* Developer Footer */}
+            <footer className="mt-12 mb-8 text-center space-y-2">
+              <p className="text-slate-400 text-sm font-medium">
+                © {new Date().getFullYear()} {profile?.name}. All rights
+                reserved.
+              </p>
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                Developed by{" "}
+                <a
+                  href="https://www.nagarjunatechsolutions.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-orange-500 hover:text-orange-600 transition-colors inline-flex items-center gap-1"
+                >
+                  Nagarjuna tech solutions Pvt Ltd
+                  <ExternalLink className="w-2.5 h-2.5" />
+                </a>
+              </p>
+            </footer>
           </div>
         </main>
       </div>

@@ -10,6 +10,7 @@ import {
   ShoppingBag,
   Truck,
   ArrowRight,
+  ExternalLink,
 } from "lucide-react";
 
 export default async function HomePage() {
@@ -234,10 +235,23 @@ export default async function HomePage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-full -mr-16 -mt-16 z-0 opacity-50 pointer-events-none" />
         </div>
 
-        <footer className="pt-8 pb-4 text-center">
+        <footer className="pt-8 pb-4 text-center space-y-2">
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+            Developed by{" "}
+            <a
+              href="https://www.nagarjunatechsolutions.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-orange-500 hover:text-orange-600 transition-colors inline-flex items-center gap-1"
+            >
+              Nagarjuna tech solutions Pvt Ltd
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+          </p>
           <p className="text-slate-400 text-sm font-medium">
             © {new Date().getFullYear()} {profile.name}. All rights reserved.
           </p>
+      
         </footer>
       </div>
     </main>

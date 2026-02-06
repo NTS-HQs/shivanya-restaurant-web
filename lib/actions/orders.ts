@@ -11,8 +11,8 @@ type CartItem = {
 };
 
 type PlaceOrderInput = {
-  customerName: string;
-  customerMobile: string;
+  customerName?: string;
+  customerMobile?: string;
   type: "DINE_IN" | "TAKEAWAY" | "DELIVERY";
   tableNumber?: string;
   address?: string;
@@ -33,8 +33,8 @@ export async function placeOrder(input: PlaceOrderInput) {
 
   const order = await prisma.order.create({
     data: {
-      customerName: input.customerName,
-      customerMobile: input.customerMobile,
+      customerName: input.customerName || "Counter Customer",
+      customerMobile: input.customerMobile || "NA",
       type: input.type as OrderType,
       status: initialStatus,
       tableNumber: input.tableNumber,

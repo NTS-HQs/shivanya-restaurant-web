@@ -33,17 +33,17 @@ export default function POSPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string>("");
+  const [activeCategory, setActiveCategory] = useState<string>("all");
   const [customerName, setCustomerName] = useState("");
   const [customerMobile, setCustomerMobile] = useState("");
   const [tableNumber, setTableNumber] = useState("");
   const [isPending, startTransition] = useTransition();
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
+  const [showCart, setShowCart] = useState(false);
 
   useEffect(() => {
     getMenuWithCategories().then((data) => {
       setCategories(data);
-      if (data.length > 0) setActiveCategory(data[0].id);
     });
   }, []);
 
@@ -80,7 +80,7 @@ export default function POSPage() {
   );
 
   const handlePlaceOrder = () => {
-    if (!customerName || !customerMobile || cart.length === 0) return;
+    if (cart.length === 0) return;
 
     startTransition(async () => {
       const result = await placeOrder({
@@ -96,24 +96,34 @@ export default function POSPage() {
         setCustomerName("");
         setCustomerMobile("");
         setTableNumber("");
+        setShowCart(false);
         setTimeout(() => setOrderSuccess(null), 3000);
       }
     });
   };
 
-  const filteredItems =
-    categories
-      .find((c) => c.id === activeCategory)
-      ?.items.filter((i) =>
-        i.name.toLowerCase().includes(search.toLowerCase())
-      ) || [];
+  const allItems = categories.flatMap((c) => c.items);
+  const itemsToFilter =
+    activeCategory === "all"
+      ? allItems
+      : categories.find((c) => c.id === activeCategory)?.items || [];
+
+  const filteredItems = itemsToFilter.filter((i) =>
+    i.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  console.log("POS Items:", {
+    categoriesCount: categories.length,
+    itemsToFilterCount: itemsToFilter.length,
+    filteredItemsCount: filteredItems.length,
+  });
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
+    <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50">
       {/* Menu Selection Area */}
       <div className="flex-1 flex flex-col p-4 gap-4 overflow-hidden">
         {/* Header & Search */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -123,10 +133,29 @@ export default function POSPage() {
               className="pl-9 bg-white"
             />
           </div>
+          <Button
+            className="lg:hidden relative bg-orange-600 hover:bg-orange-700"
+            size="icon"
+            onClick={() => setShowCart(true)}
+          >
+            <ShoppingCart className="w-5 h-5" />
+            {cart.length > 0 && (
+              <Badge className="absolute -top-2 -right-2 bg-slate-900 border-white text-[10px] px-1.5 py-0">
+                {cart.reduce((s, i) => s + i.quantity, 0)}
+              </Badge>
+            )}
+          </Button>
         </div>
 
         {/* Categories */}
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          <Button
+            variant={activeCategory === "all" ? "default" : "outline"}
+            onClick={() => setActiveCategory("all")}
+            className="whitespace-nowrap"
+          >
+            All Items
+          </Button>
           {categories.map((cat) => (
             <Button
               key={cat.id}
@@ -159,11 +188,33 @@ export default function POSPage() {
       </div>
 
       {/* Cart Sidebar */}
-      <div className="w-96 bg-white border-l shadow-xl flex flex-col h-full">
-        <div className="p-4 border-b">
+      {/* Backdrop for Mobile */}
+      {showCart && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 lg:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setShowCart(false)}
+        />
+      )}
+
+      <div
+        className={`
+        fixed inset-y-0 right-0 z-50 w-[85%] sm:w-80 md:w-96 bg-white border-l shadow-2xl flex flex-col h-full transition-transform duration-300 ease-in-out
+        lg:relative lg:translate-x-0 lg:z-0 lg:w-96 lg:shadow-xl lg:flex
+        ${showCart ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
+      `}
+      >
+        <div className="p-4 border-b flex justify-between items-center">
           <h2 className="font-bold text-lg flex items-center gap-2">
             <ShoppingCart className="w-5 h-5" /> Current Order
           </h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={() => setShowCart(false)}
+          >
+            <Trash2 className="w-5 h-5 text-slate-400" />
+          </Button>
         </div>
 
         {/* Customer Details */}
@@ -256,9 +307,7 @@ export default function POSPage() {
 
           <Button
             className="w-full bg-orange-600 hover:bg-orange-700 py-6 text-lg font-bold shadow-md hover:shadow-lg transition-all"
-            disabled={
-              isPending || cart.length === 0 || !customerName || !customerMobile
-            }
+            disabled={isPending || cart.length === 0}
             onClick={handlePlaceOrder}
           >
             {isPending ? (
@@ -273,6 +322,29 @@ export default function POSPage() {
           </Button>
         </div>
       </div>
+
+      {/* Floating Cart Summary for Mobile */}
+      {cart.length > 0 && !showCart && (
+        <div className="lg:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-3rem)] max-w-sm">
+          <Button
+            onClick={() => setShowCart(true)}
+            className="w-full bg-slate-900 hover:bg-black text-white h-14 rounded-2xl shadow-2xl flex items-center justify-between px-6 font-bold"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-orange-600 rounded-lg p-1.5">
+                <ShoppingCart className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-sm">
+                {cart.reduce((s, i) => s + i.quantity, 0)} Items
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm opacity-60">Total:</span>
+              <span className="text-orange-400 font-bold">₹{totalAmount}</span>
+            </div>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
