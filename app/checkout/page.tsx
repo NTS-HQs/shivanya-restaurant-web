@@ -126,6 +126,17 @@ export default function CheckoutPage() {
     setTxnId(`TRX${Date.now()}${Math.floor(Math.random() * 1000)}`);
   }, [items]); // Regenerate if items change (amount changes)
 
+  // Ultra-compatible Personal UPI URI
+  // Minimal parameters: pa (ID), pn (Name), cu (Currency)
+  const upiId = shopSettings?.upiId?.trim() || "";
+  const upiUri = upiId
+    ? `upi://pay?pa=${upiId}&pn=${encodeURIComponent("Shivanya")}&cu=INR`
+    : "";
+
+  useEffect(() => {
+    if (upiUri) console.log("Generated UPI URI:", upiUri);
+  }, [upiUri]);
+
   const handleConfirmPayment = async () => {
     setIsPlacing(true);
     try {
@@ -147,15 +158,23 @@ export default function CheckoutPage() {
           price: i.price,
           quantity: i.quantity,
         })),
-        // In a real app, payment status would be determined by the gateway
       });
 
-      if (result.success) {
+      if (result.success && result.orderId) {
         setOrderSuccess(result.orderId);
         clearCart();
+        // Redirect to menu page after a short delay
+        setTimeout(() => {
+          router.push("/menu");
+        }, 2000);
+      } else {
+        alert(result.error || "Failed to place order. Please try again.");
       }
     } catch (error) {
-      console.error("Order failed:", error);
+      console.error("Order placement error:", error);
+      alert(
+        "Something went wrong. Please check your connection and try again."
+      );
     } finally {
       setIsPlacing(false);
     }
@@ -192,9 +211,9 @@ export default function CheckoutPage() {
                 received your ticket.
               </p>
 
-              <Link href="/" className="w-full">
+              <Link href="/menu" className="w-full">
                 <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-2xl py-6 font-bold text-lg shadow-xl shadow-slate-200 transition-transform active:scale-95">
-                  Back to Home
+                  Back to Menu
                 </Button>
               </Link>
             </div>
@@ -710,38 +729,69 @@ export default function CheckoutPage() {
                     </p>
                   </div>
 
-                  <div className="w-40 h-40 bg-white rounded-xl shadow-sm p-3 mb-3 flex items-center justify-center overflow-hidden border border-slate-100">
-                    {shopSettings?.upiId ? (
-                      <div className="w-full h-full">
-                        <QRCode
-                          size={160}
-                          style={{
-                            height: "auto",
-                            maxWidth: "100%",
-                            width: "100%",
-                          }}
-                          value={`upi://pay?pa=${shopSettings.upiId}&pn=Shivanya&cu=INR`}
-                          viewBox={`0 0 256 256`}
-                        />
-                      </div>
+                  <div className="w-80 h-80 flex items-center justify-center overflow-hidden mb-4">
+                    {shopSettings?.paymentQrCode ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={shopSettings.paymentQrCode}
+                        alt="Payment QR"
+                        className="w-full h-full object-contain"
+                      />
                     ) : (
-                      <QrCode className="w-full h-full text-slate-900 p-4" />
+                      <div className="flex flex-col items-center gap-2 text-slate-400">
+                        <QrCode className="w-12 h-12" />
+                        <p className="text-[10px] font-medium uppercase">
+                          QR Not Uploaded
+                        </p>
+                      </div>
                     )}
                   </div>
 
-                  {shopSettings?.upiId && (
-                    <a
-                      href={`upi://pay?pa=${shopSettings.upiId}&pn=Shivanya&cu=INR`}
-                      className="w-full"
+                  <div className="w-full space-y-4">
+                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 flex gap-3 items-start text-left">
+                      <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                        <Info className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-blue-900 leading-tight">
+                          Verification Required
+                        </p>
+                        <p className="text-[11px] text-blue-800 leading-normal">
+                          Please scan and pay{" "}
+                          <strong>₹{getTotalAmount()}</strong>. After payment,{" "}
+                          <strong>share a screenshot</strong> with the seller to
+                          confirm your order.
+                        </p>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleConfirmPayment}
+                      disabled={isPlacing}
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-2xl py-6 font-bold text-base shadow-lg transform transition-transform active:scale-95 h-auto"
                     >
-                      <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl py-4 font-bold text-sm shadow-md shadow-blue-200 transform transition-transform active:scale-95 h-auto">
-                        Pay via UPI App
+                      {isPlacing ? (
+                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      ) : (
+                        "Complete Order"
+                      )}
+                    </Button>
+
+                    {shopSettings?.upiId && (
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          const upiId = shopSettings?.upiId?.trim() || "";
+                          navigator.clipboard.writeText(upiId);
+                          alert("UPI ID Copied!");
+                        }}
+                        className="w-full text-slate-500 rounded-xl py-2 text-[10px] font-medium h-auto hover:bg-slate-100"
+                      >
+                        Trouble scanning? Copy UPI ID:{" "}
+                        {shopSettings.upiId.trim()}
                       </Button>
-                    </a>
-                  )}
-                  <p className="text-xs text-slate-400 mt-2 text-center">
-                    Tap above to pay using GPay / PhonePe / Paytm
-                  </p>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="bg-slate-50 rounded-2xl p-6 mb-6 text-center relative z-10">
@@ -776,14 +826,7 @@ export default function CheckoutPage() {
                   variant="ghost"
                   onClick={() => setShowPayment(false)}
                   className="w-full text-slate-400 hover:bg-slate-50 hover:text-slate-600 rounded-lg text-xs h-8"
-                >
-                  -ICD PetBERT-ICD is a multi label classification model based
-                  on the PetBERT architecture further trained on over 500
-                  million additional words from first-opinion veterinary
-                  clinicians from across the UK. PetBERT-ICD was trained on a
-                  multi-label dataset of the 20 'chapters' of the International
-                  Classification of Disease (ICD) Cancel
-                </Button>
+                ></Button>
               </div>
             </motion.div>
           </motion.div>

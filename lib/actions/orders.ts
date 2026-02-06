@@ -31,6 +31,21 @@ export async function placeOrder(input: PlaceOrderInput) {
     ? OrderStatus.DELIVERED
     : OrderStatus.PENDING;
 
+  // Verify all items exist in the database to prevent foreign key violations
+  const menuItemIds = input.items.map((i) => i.id);
+  const existingItems = await prisma.menuItem.findMany({
+    where: { id: { in: menuItemIds } },
+    select: { id: true },
+  });
+
+  if (existingItems.length !== input.items.length) {
+    return {
+      success: false,
+      error:
+        "Some items in your cart are no longer available. Please refresh the menu and try again.",
+    };
+  }
+
   const order = await prisma.order.create({
     data: {
       customerName: input.customerName || "Counter Customer",

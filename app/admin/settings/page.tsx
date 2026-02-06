@@ -35,8 +35,7 @@ export default function SettingsPage() {
         openTime: profile.openTime,
         closeTime: profile.closeTime,
         isOpen: profile.isOpen,
-        // isOpen removed (duplicate)
-        // paymentQrCode removed
+        paymentQrCode: profile.paymentQrCode || undefined,
         upiId: profile.upiId || undefined,
       });
       setSaved(true);
@@ -233,7 +232,20 @@ export default function SettingsPage() {
             </h2>
 
             <div className="space-y-6">
-              {/* Payment QR Code section removed */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  Payment QR Code (Static Image)
+                </label>
+                <ImageUpload
+                  value={profile.paymentQrCode || ""}
+                  onChange={(url) =>
+                    setProfile({ ...profile, paymentQrCode: url })
+                  }
+                />
+                <p className="text-xs text-slate-500">
+                  Upload your GPay/PhonePe QR code screenshot here.
+                </p>
+              </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">
