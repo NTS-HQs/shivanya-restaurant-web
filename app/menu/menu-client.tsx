@@ -31,11 +31,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import { getRestaurantProfile } from "@/lib/actions/menu";
 
+type Variant = {
+  name: string;
+  price: number;
+};
+
 type MenuItem = {
   id: string;
   name: string;
   description: string | null;
-  price: number;
+  variants: Variant[] | null;
   image: string | null;
   isVeg: boolean;
   isAvailable: boolean;
@@ -72,6 +77,8 @@ export function MenuClient({
   } = useCartStore();
 
   const [mounted, setMounted] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [selectedSize, setSelectedSize] = useState<string>("");
 
   useEffect(() => {
     setMounted(true);
@@ -275,33 +282,45 @@ export function MenuClient({
                       <h4 className="font-bold text-lg text-slate-800 mb-1 line-clamp-1">
                         {item.name}
                       </h4>
-                      <p className="text-xs text-slate-400 line-clamp-2 mb-4 h-8">
+                      <p className="text-xs text-slate-400 line-clamp-2 mb-3 h-8">
                         {item.description}
                       </p>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-sm font-bold text-orange-600">
-                            ₹
-                          </span>
-                          <span className="text-xl font-black text-slate-800">
-                            {item.price}
-                          </span>
-                        </div>
-
-                        {item.isAvailable ? (
-                          <Button
-                            onClick={() =>
-                              addItem({ ...item, isVeg: item.isVeg })
-                            }
-                            size="icon"
-                            className="rounded-full w-10 h-10 bg-orange-600 hover:bg-orange-700 text-white shadow-lg shadow-orange-200"
-                          >
-                            <Plus className="w-5 h-5" />
-                          </Button>
+                      {/* Price Options - Modern Single Button Design */}
+                      <div className="mt-3">
+                        {item.variants && item.isAvailable ? (
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-slate-500">
+                              {item.variants.length === 1 ? (
+                                <span className="font-bold text-slate-800">₹{item.variants[0].price}</span>
+                              ) : (
+                                <span>₹{Math.min(...item.variants.map(v => v.price))} - ₹{Math.max(...item.variants.map(v => v.price))}</span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => {
+                                if (item.variants && item.variants.length === 1) {
+                                  // Single variant - add directly
+                                  addItem({
+                                    id: `${item.id}-${item.variants[0].name}`,
+                                    name: `${item.name} (${item.variants[0].name})`,
+                                    price: item.variants[0].price,
+                                    isVeg: item.isVeg,
+                                  });
+                                } else {
+                                  // Multiple variants - show selector
+                                  setSelectedItem(item);
+                                  setSelectedSize(item.variants?.[0]?.name || "");
+                                }
+                              }}
+                              className="w-10 h-10 bg-orange-600 text-white rounded-full flex items-center justify-center hover:bg-orange-700 transition-colors shadow-md"
+                            >
+                              <Plus className="w-5 h-5" />
+                            </button>
+                          </div>
                         ) : (
                           <span className="text-xs font-bold text-slate-300">
-                            Sold Out
+                            {item.isAvailable ? "No variants available" : "Sold Out"}
                           </span>
                         )}
                       </div>
@@ -433,7 +452,7 @@ export function MenuClient({
                 </div>
                 <div className="flex flex-col justify-between items-end py-1">
                   <span className="font-bold text-slate-800 text-sm">
-                    ₹{item.price * item.quantity}
+                    ₹{(item.price || 0) * item.quantity}
                   </span>
                 </div>
               </div>
@@ -495,6 +514,95 @@ export function MenuClient({
           </Button>
         </Link>
       </div>
+
+      {/* Size Selector Modal */}
+      <AnimatePresence>
+        {selectedItem && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedItem(null)}
+              className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm"
+            />
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none"
+            >
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 pointer-events-auto">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-lg text-slate-800">
+                    {selectedItem.name}
+                  </h3>
+                  <button
+                    onClick={() => setSelectedItem(null)}
+                    className="text-slate-400 hover:text-slate-600"
+                  >
+                    <span className="text-2xl">×</span>
+                  </button>
+                </div>
+                
+                <p className="text-sm text-slate-500 mb-4">Select Size</p>
+                
+                <div className="space-y-2 mb-6">
+                  {selectedItem.variants?.map((variant) => (
+                    <label
+                      key={variant.name}
+                      className={`flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                        selectedSize === variant.name
+                          ? "border-orange-600 bg-orange-50"
+                          : "border-slate-100 hover:border-slate-200"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="size"
+                          value={variant.name}
+                          checked={selectedSize === variant.name}
+                          onChange={() => setSelectedSize(variant.name)}
+                          className="w-4 h-4 text-orange-600 focus:ring-orange-600"
+                        />
+                        <span className="font-medium text-slate-700">
+                          {variant.name}
+                        </span>
+                      </div>
+                      <span className="font-bold text-slate-800">
+                        ₹{variant.price}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => {
+                    const variant = selectedItem.variants?.find(
+                      (v) => v.name === selectedSize
+                    );
+                    if (variant) {
+                      addItem({
+                        id: `${selectedItem.id}-${variant.name}`,
+                        name: `${selectedItem.name} (${variant.name})`,
+                        price: variant.price,
+                        isVeg: selectedItem.isVeg,
+                      });
+                      setSelectedItem(null);
+                    }
+                  }}
+                  className="w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-xl transition-colors"
+                >
+                  Add to Cart
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -546,7 +654,6 @@ function MenuItemCard({
           <h3 className="font-bold text-slate-900 text-lg leading-tight">
             {item.name}
           </h3>
-          <span className="font-bold text-orange-600">₹{item.price}</span>
         </div>
 
         <p className="text-sm text-slate-400 line-clamp-2 mb-4 flex-1">

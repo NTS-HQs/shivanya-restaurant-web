@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -30,10 +30,129 @@ export default function OrdersPage() {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [printOrder, setPrintOrder] = useState<Order | null>(null);
+  const [lastOrderCount, setLastOrderCount] = useState<number>(0);
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const prevOrdersRef = useRef<Order[]>([]);
+
+  // Initialize and resume audio context on user interaction
+  useEffect(() => {
+    const initAudio = async () => {
+      if (!audioContext) {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        setAudioContext(ctx);
+        setAudioEnabled(true);
+        console.log('Audio context created');
+      } else if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+        setAudioEnabled(true);
+        console.log('Audio context resumed');
+      }
+    };
+    
+    // Initialize on any user interaction
+    const events = ['click', 'touchstart', 'keydown'];
+    events.forEach(event => {
+      window.addEventListener(event, initAudio, { once: true });
+    });
+    
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, initAudio);
+      });
+    };
+  }, [audioContext]);
+
+  // Play buzzer sound
+  const playBuzzer = async () => {
+    if (!audioContext) {
+      console.log('Audio context not ready');
+      return;
+    }
+    
+    // Ensure context is running
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+    
+    try {
+      const now = audioContext.currentTime;
+      
+      // First ding - higher pitch
+      const osc1 = audioContext.createOscillator();
+      const gain1 = audioContext.createGain();
+      osc1.connect(gain1);
+      gain1.connect(audioContext.destination);
+      
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(1200, now);
+      osc1.frequency.exponentialRampToValueAtTime(600, now + 0.3);
+      
+      gain1.gain.setValueAtTime(0.5, now);
+      gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+      
+      osc1.start(now);
+      osc1.stop(now + 0.5);
+      
+      // Second ding - lower pitch, starts after first
+      const osc2 = audioContext.createOscillator();
+      const gain2 = audioContext.createGain();
+      osc2.connect(gain2);
+      gain2.connect(audioContext.destination);
+      
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(800, now + 0.15);
+      osc2.frequency.exponentialRampToValueAtTime(400, now + 0.45);
+      
+      gain2.gain.setValueAtTime(0.5, now + 0.15);
+      gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+      
+      osc2.start(now + 0.15);
+      osc2.stop(now + 0.6);
+      
+      console.log('Buzzer played successfully');
+    } catch (error) {
+      console.error('Error playing buzzer:', error);
+    }
+  };
 
   const fetchOrders = async () => {
     setIsRefreshing(true);
     const data = await getAllOrders();
+    
+    // Check for new pending orders using ref for accurate comparison
+    const currentPendingCount = data.filter(o => o.status === "PENDING").length;
+    const previousPendingCount = prevOrdersRef.current.filter(o => o.status === "PENDING").length;
+    
+    console.log(`Orders check: ${previousPendingCount} → ${currentPendingCount} pending orders`);
+    
+    // If there are more pending orders than before, play buzzer
+    if (currentPendingCount > previousPendingCount && prevOrdersRef.current.length > 0) {
+      console.log('New order detected! Playing buzzer...');
+      console.log('Audio context state before play:', audioContext?.state);
+      
+      // Ensure audio context is ready before playing
+      if (audioContext) {
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+          console.log('Audio context resumed');
+        }
+        await playBuzzer();
+      } else {
+        console.log('Audio context not available');
+      }
+      
+      // Show browser notification
+      if (Notification.permission === "granted") {
+        new Notification("New Order!", {
+          body: `You have ${currentPendingCount} pending order${currentPendingCount > 1 ? 's' : ''}`,
+          icon: "🍽️",
+        });
+      }
+    }
+    
+    // Update ref before setting state
+    prevOrdersRef.current = data;
     setOrders(data);
     setIsRefreshing(false);
   };
@@ -62,6 +181,13 @@ export default function OrdersPage() {
     const interval = setInterval(fetchOrders, 10000);
     return () => clearInterval(interval);
   }, []);
+
+  // Update ref when orders state changes
+  useEffect(() => {
+    prevOrdersRef.current = orders;
+  }, [orders]);
+
+
 
   const handleStatusUpdate = (
     orderId: string,

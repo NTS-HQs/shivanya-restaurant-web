@@ -1,6 +1,7 @@
 import { getDashboardStats, getPendingOrders } from "@/lib/actions/orders";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { NotificationPrompt } from "../notification-prompt";
 import {
   TrendingUp,
   ShoppingBag,
@@ -32,6 +33,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-6">
+      <NotificationPrompt />
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
 
       {/* Stats Grid */}

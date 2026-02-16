@@ -40,15 +40,25 @@ export async function toggleMenuItem(itemId: string, isAvailable: boolean) {
   return item;
 }
 
+export type Variant = {
+  name: string;
+  price: number;
+};
+
 export async function createMenuItem(data: {
   name: string;
   description?: string;
-  price: number;
+  variants: Variant[];
   image?: string;
   isVeg: boolean;
   categoryId: string;
 }) {
-  const item = await prisma.menuItem.create({ data });
+  const item = await prisma.menuItem.create({ 
+    data: {
+      ...data,
+      variants: data.variants as any,
+    }
+  });
   revalidatePath("/menu");
   revalidatePath("/admin/pos");
   return item;
@@ -59,7 +69,7 @@ export async function updateMenuItem(
   data: {
     name?: string;
     description?: string;
-    price?: number;
+    variants?: Variant[];
     image?: string;
     isVeg?: boolean;
     isAvailable?: boolean;
@@ -68,7 +78,10 @@ export async function updateMenuItem(
 ) {
   const item = await prisma.menuItem.update({
     where: { id: itemId },
-    data,
+    data: {
+      ...data,
+      variants: data.variants as any,
+    },
   });
   revalidatePath("/menu");
   revalidatePath("/admin/pos");

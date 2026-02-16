@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "MenuItem" ADD COLUMN     "fullPrice" DOUBLE PRECISION,
+ADD COLUMN     "halfPrice" DOUBLE PRECISION,
+ALTER COLUMN "price" DROP NOT NULL;

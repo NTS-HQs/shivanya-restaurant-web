@@ -43,7 +43,7 @@ model MenuItem {
   id          String      @id @default(uuid())
   name        String
   description String?
-  price       Float
+  variants    Json?       // Array of {name: string, price: number}
   image       String?
   isVeg       Boolean     @default(true)
   isAvailable Boolean     @default(true)

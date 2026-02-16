@@ -4,7 +4,7 @@ import { persist } from "zustand/middleware";
 export type CartItem = {
   id: string;
   name: string;
-  price: number;
+  price: number | null;
   quantity: number;
   isVeg: boolean;
 };
@@ -70,7 +70,7 @@ export const useCartStore = create<CartStore>()(
 
       getTotalAmount: () => {
         return get().items.reduce(
-          (sum, item) => sum + item.price * item.quantity,
+          (sum, item) => sum + (item.price || 0) * item.quantity,
           0
         );
       },

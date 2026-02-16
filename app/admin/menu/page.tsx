@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { getAllMenuItems, getMenuWithCategories } from "@/lib/actions/menu";
+import { getAllMenuItems } from "@/lib/actions/menu";
 import {
   toggleMenuItem,
   createMenuItem,
@@ -14,6 +14,7 @@ import {
   deleteMenuItem,
   createCategory,
   getCategories,
+  Variant,
 } from "@/lib/actions/seller";
 import {
   Plus,
@@ -24,6 +25,7 @@ import {
   Loader2,
   Pencil,
   Trash2,
+  X,
 } from "lucide-react";
 
 type MenuItem = Awaited<ReturnType<typeof getAllMenuItems>>[0];
@@ -40,12 +42,13 @@ export default function MenuManagementPage() {
   const [newItem, setNewItem] = useState({
     name: "",
     description: "",
-    price: "",
+    variants: [{ name: "", price: "" }] as { name: string; price: string }[],
     image: "",
     isVeg: true,
     categoryId: "",
   });
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [showInlineCategoryAdd, setShowInlineCategoryAdd] = useState(false);
 
   const fetchData = async () => {
     const [menuItems, cats] = await Promise.all([
@@ -68,13 +71,22 @@ export default function MenuManagementPage() {
   };
 
   const handleAddItem = () => {
-    if (!newItem.name || !newItem.price || !newItem.categoryId) return;
+    if (!newItem.name || !newItem.categoryId) return;
+    
+    // Validate variants - at least one with name and price
+    const validVariants = newItem.variants.filter(
+      (v) => v.name.trim() && v.price.trim()
+    );
+    if (validVariants.length === 0) return;
 
     startTransition(async () => {
       await createMenuItem({
         name: newItem.name,
         description: newItem.description || undefined,
-        price: parseFloat(newItem.price),
+        variants: validVariants.map((v) => ({
+          name: v.name.trim(),
+          price: parseFloat(v.price),
+        })),
         image: newItem.image || undefined,
         isVeg: newItem.isVeg,
         categoryId: newItem.categoryId,
@@ -82,7 +94,7 @@ export default function MenuManagementPage() {
       setNewItem({
         name: "",
         description: "",
-        price: "",
+        variants: [{ name: "", price: "" }],
         image: "",
         isVeg: true,
         categoryId: "",
@@ -93,20 +105,42 @@ export default function MenuManagementPage() {
   };
 
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [editingVariants, setEditingVariants] = useState<{ name: string; price: string }[]>([]);
+
+  const startEditing = (item: MenuItem) => {
+    setEditingItem(item);
+    // Parse variants from JSON
+    const variants = (item.variants as Variant[] | null) || [];
+    setEditingVariants(
+      variants.length > 0
+        ? variants.map((v) => ({ name: v.name, price: v.price.toString() }))
+        : [{ name: "", price: "" }]
+    );
+  };
 
   const handleUpdateItem = () => {
-    if (!editingItem || !editingItem.name || !editingItem.price) return;
+    if (!editingItem || !editingItem.name) return;
+
+    // Validate variants - at least one with name and price
+    const validVariants = editingVariants.filter(
+      (v) => v.name.trim() && v.price.trim()
+    );
+    if (validVariants.length === 0) return;
 
     startTransition(async () => {
       await updateMenuItem(editingItem.id, {
         name: editingItem.name,
         description: editingItem.description || undefined,
-        price: Number(editingItem.price),
+        variants: validVariants.map((v) => ({
+          name: v.name.trim(),
+          price: parseFloat(v.price),
+        })),
         image: editingItem.image || undefined,
         isVeg: editingItem.isVeg,
         categoryId: editingItem.categoryId,
       });
       setEditingItem(null);
+      setEditingVariants([]);
       await fetchData();
     });
   };
@@ -131,6 +165,50 @@ export default function MenuManagementPage() {
     });
   };
 
+  const addVariant = (isNewItem: boolean) => {
+    if (isNewItem) {
+      setNewItem({
+        ...newItem,
+        variants: [...newItem.variants, { name: "", price: "" }],
+      });
+    } else {
+      setEditingVariants([...editingVariants, { name: "", price: "" }]);
+    }
+  };
+
+  const removeVariant = (index: number, isNewItem: boolean) => {
+    if (isNewItem) {
+      setNewItem({
+        ...newItem,
+        variants: newItem.variants.filter((_, i) => i !== index),
+      });
+    } else {
+      setEditingVariants(editingVariants.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateVariant = (
+    index: number,
+    field: "name" | "price",
+    value: string,
+    isNewItem: boolean
+  ) => {
+    if (isNewItem) {
+      const updated = [...newItem.variants];
+      updated[index][field] = value;
+      setNewItem({ ...newItem, variants: updated });
+    } else {
+      const updated = [...editingVariants];
+      updated[index][field] = value;
+      setEditingVariants(updated);
+    }
+  };
+
+  // Helper to get variants from item
+  const getItemVariants = (item: MenuItem): Variant[] => {
+    return (item.variants as Variant[] | null) || [];
+  };
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -139,8 +217,16 @@ export default function MenuManagementPage() {
           <Button variant="outline" onClick={() => setShowAddCategory(true)}>
             <Plus className="w-4 h-4 mr-1" /> Category
           </Button>
-          <Button onClick={() => setShowAddItem(true)}>
-            <Plus className="w-4 h-4 mr-1" /> Add Item
+          <Button 
+            onClick={() => {
+              if (categories.length === 0) {
+                setShowAddCategory(true);
+              } else {
+                setShowAddItem(true);
+              }
+            }}
+          >
+            <Plus className="w-4 h-4 mr-1" /> {categories.length === 0 ? "Create Category First" : "Add Item"}
           </Button>
         </div>
       </div>
@@ -185,14 +271,54 @@ export default function MenuManagementPage() {
               value={newItem.name}
               onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
             />
-            <Input
-              placeholder="Price *"
-              type="number"
-              value={newItem.price}
-              onChange={(e) =>
-                setNewItem({ ...newItem, price: e.target.value })
-              }
-            />
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Size Variants * (e.g., Half, Full, Small, Large, Family)
+              </label>
+              <div className="space-y-2">
+                {newItem.variants.map((variant, index) => (
+                  <div key={index} className="flex gap-2 items-center">
+                    <Input
+                      placeholder="Size name (e.g., Half, Full)"
+                      value={variant.name}
+                      onChange={(e) =>
+                        updateVariant(index, "name", e.target.value, true)
+                      }
+                      className="flex-1"
+                    />
+                    <Input
+                      placeholder="Price"
+                      type="number"
+                      value={variant.price}
+                      onChange={(e) =>
+                        updateVariant(index, "price", e.target.value, true)
+                      }
+                      className="w-32"
+                    />
+                    {newItem.variants.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => removeVariant(index, true)}
+                        className="text-red-500"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => addVariant(true)}
+                  className="mt-2"
+                >
+                  <Plus className="w-4 h-4 mr-1" /> Add Size
+                </Button>
+              </div>
+            </div>
+
             <Input
               placeholder="Description"
               value={newItem.description}
@@ -200,20 +326,78 @@ export default function MenuManagementPage() {
                 setNewItem({ ...newItem, description: e.target.value })
               }
             />
-            <select
-              className="border rounded-md px-3 py-2"
-              value={newItem.categoryId}
-              onChange={(e) =>
-                setNewItem({ ...newItem, categoryId: e.target.value })
-              }
-            >
-              <option value="">Select Category *</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
+            <div className="flex gap-2">
+              <select
+                className="border rounded-md px-3 py-2 flex-1"
+                value={newItem.categoryId}
+                onChange={(e) => {
+                  if (e.target.value === "__new__") {
+                    setShowInlineCategoryAdd(true);
+                    setNewItem({ ...newItem, categoryId: "" });
+                  } else {
+                    setShowInlineCategoryAdd(false);
+                    setNewItem({ ...newItem, categoryId: e.target.value });
+                  }
+                }}
+              >
+                <option value="">
+                  {categories.length === 0
+                    ? "No categories - Create one first"
+                    : "Select Category *"}
                 </option>
-              ))}
-            </select>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </option>
+                ))}
+                <option value="__new__">+ Create New Category</option>
+              </select>
+            </div>
+
+            {/* Inline Category Creation */}
+            {showInlineCategoryAdd && (
+              <div className="flex gap-2 mt-2 p-3 bg-slate-50 rounded-lg">
+                <Input
+                  placeholder="Enter new category name"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  className="flex-1"
+                  autoFocus
+                />
+                <Button
+                  onClick={async () => {
+                    if (!newCategoryName.trim()) return;
+                    startTransition(async () => {
+                      const newCat = await createCategory(
+                        newCategoryName.trim()
+                      );
+                      await fetchData();
+                      setNewItem({ ...newItem, categoryId: newCat.id });
+                      setNewCategoryName("");
+                      setShowInlineCategoryAdd(false);
+                    });
+                  }}
+                  disabled={isPending || !newCategoryName.trim()}
+                  size="sm"
+                >
+                  {isPending ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    "Create"
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setShowInlineCategoryAdd(false);
+                    setNewCategoryName("");
+                  }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
             <div className="flex items-center gap-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -272,17 +456,54 @@ export default function MenuManagementPage() {
                   setEditingItem({ ...editingItem, name: e.target.value })
                 }
               />
-              <Input
-                placeholder="Price *"
-                type="number"
-                value={editingItem.price}
-                onChange={(e) =>
-                  setEditingItem({
-                    ...editingItem,
-                    price: Number(e.target.value),
-                  })
-                }
-              />
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Size Variants * (e.g., Half, Full, Small, Large, Family)
+                </label>
+                <div className="space-y-2">
+                  {editingVariants.map((variant, index) => (
+                    <div key={index} className="flex gap-2 items-center">
+                      <Input
+                        placeholder="Size name (e.g., Half, Full)"
+                        value={variant.name}
+                        onChange={(e) =>
+                          updateVariant(index, "name", e.target.value, false)
+                        }
+                        className="flex-1"
+                      />
+                      <Input
+                        placeholder="Price"
+                        type="number"
+                        value={variant.price}
+                        onChange={(e) =>
+                          updateVariant(index, "price", e.target.value, false)
+                        }
+                        className="w-32"
+                      />
+                      {editingVariants.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeVariant(index, false)}
+                          className="text-red-500"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addVariant(false)}
+                    className="mt-2"
+                  >
+                    <Plus className="w-4 h-4 mr-1" /> Add Size
+                  </Button>
+                </div>
+              </div>
+
               <Input
                 placeholder="Description"
                 value={editingItem.description || ""}
@@ -293,19 +514,72 @@ export default function MenuManagementPage() {
                   })
                 }
               />
-              <select
-                className="border rounded-md px-3 py-2"
-                value={editingItem.categoryId}
-                onChange={(e) =>
-                  setEditingItem({ ...editingItem, categoryId: e.target.value })
-                }
-              >
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
+              <div className="flex gap-2">
+                <select
+                  className="border rounded-md px-3 py-2 flex-1"
+                  value={editingItem.categoryId}
+                  onChange={(e) => {
+                    if (e.target.value === "__new__") {
+                      setShowInlineCategoryAdd(true);
+                    } else {
+                      setShowInlineCategoryAdd(false);
+                      setEditingItem({ ...editingItem, categoryId: e.target.value });
+                    }
+                  }}
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                  <option value="__new__">+ Create New Category</option>
+                </select>
+              </div>
+
+              {/* Inline Category Creation for Edit Modal */}
+              {showInlineCategoryAdd && (
+                <div className="flex gap-2 mt-2 p-3 bg-slate-50 rounded-lg">
+                  <Input
+                    placeholder="Enter new category name"
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    className="flex-1"
+                    autoFocus
+                  />
+                  <Button
+                    onClick={async () => {
+                      if (!newCategoryName.trim()) return;
+                      startTransition(async () => {
+                        const newCat = await createCategory(
+                          newCategoryName.trim()
+                        );
+                        await fetchData();
+                        setEditingItem({ ...editingItem, categoryId: newCat.id });
+                        setNewCategoryName("");
+                        setShowInlineCategoryAdd(false);
+                      });
+                    }}
+                    disabled={isPending || !newCategoryName.trim()}
+                    size="sm"
+                  >
+                    {isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      "Create"
+                    )}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowInlineCategoryAdd(false);
+                      setNewCategoryName("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
               <div className="flex items-center gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -348,6 +622,36 @@ export default function MenuManagementPage() {
 
       {/* Menu Items List */}
       <div className="space-y-4">
+        {/* Empty State - No Categories */}
+        {categories.length === 0 && (
+          <Card className="p-8 text-center border-2 border-dashed border-slate-300">
+            <div className="text-4xl mb-3">📂</div>
+            <h3 className="font-bold text-lg mb-2">No Categories Yet</h3>
+            <p className="text-slate-500 mb-4">
+              You need to create a category before adding menu items.
+            </p>
+            <Button onClick={() => setShowAddCategory(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Create Your First Category
+            </Button>
+          </Card>
+        )}
+
+        {/* Empty State - Categories exist but no items */}
+        {categories.length > 0 && items.length === 0 && (
+          <Card className="p-8 text-center border-2 border-dashed border-slate-300">
+            <div className="text-4xl mb-3">🍽️</div>
+            <h3 className="font-bold text-lg mb-2">No Menu Items Yet</h3>
+            <p className="text-slate-500 mb-4">
+              Your categories are ready. Start adding menu items!
+            </p>
+            <Button onClick={() => setShowAddItem(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add Your First Item
+            </Button>
+          </Card>
+        )}
+
         {categories.map((category) => {
           const categoryItems = items.filter(
             (i) => i.categoryId === category.id
@@ -409,9 +713,16 @@ export default function MenuManagementPage() {
                               {item.description}
                             </p>
                           )}
-                          <p className="font-bold text-orange-600 mt-1">
-                            ₹{item.price}
-                          </p>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {getItemVariants(item).map((variant, idx) => (
+                              <span
+                                key={idx}
+                                className="text-sm font-medium text-orange-600"
+                              >
+                                {variant.name}: ₹{variant.price}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
 
@@ -419,7 +730,7 @@ export default function MenuManagementPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setEditingItem(item)}
+                          onClick={() => startEditing(item)}
                           title="Edit"
                           className="h-8 w-8"
                         >

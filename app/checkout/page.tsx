@@ -571,7 +571,7 @@ export default function CheckoutPage() {
                       )}
                     </div>
                     <p className="text-sm font-medium text-slate-400">
-                      ₹{item.price}
+                      ₹{item.price || 0}
                     </p>
                   </div>
 
@@ -598,7 +598,7 @@ export default function CheckoutPage() {
                       </button>
                     </div>
                     <span className="font-bold text-slate-900">
-                      ₹{item.price * item.quantity}
+                      ₹{(item.price || 0) * item.quantity}
                     </span>
                   </div>
                 </div>

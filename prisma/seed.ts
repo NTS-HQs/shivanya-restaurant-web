@@ -36,13 +36,19 @@ async function main() {
         create: [
           {
             name: "Paneer Tikka",
-            price: 250,
+            variants: [
+              { name: "Half", price: 150 },
+              { name: "Full", price: 250 },
+            ],
             description: "Spicy cottage cheese",
             isVeg: true,
           },
           {
             name: "Chicken 65",
-            price: 300,
+            variants: [
+              { name: "Half", price: 180 },
+              { name: "Full", price: 300 },
+            ],
             description: "Spicy fried chicken",
             isVeg: false,
           },
@@ -58,13 +64,19 @@ async function main() {
         create: [
           {
             name: "Butter Chicken",
-            price: 400,
+            variants: [
+              { name: "Half", price: 250 },
+              { name: "Full", price: 400 },
+            ],
             description: "Rich tomato gravy",
             isVeg: false,
           },
           {
             name: "Dal Tadka",
-            price: 200,
+            variants: [
+              { name: "Half", price: 120 },
+              { name: "Full", price: 200 },
+            ],
             description: "Yellow dal with spices",
             isVeg: true,
           },

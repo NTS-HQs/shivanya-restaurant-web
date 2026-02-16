@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { getMenuWithCategories } from "@/lib/actions/menu";
 import { placeOrder } from "@/lib/actions/orders";
+import { Variant } from "@/lib/actions/seller";
 import {
   Search,
   Plus,
@@ -29,6 +30,12 @@ type CartItem = {
   quantity: number;
 };
 
+// Helper to parse variants from JSON
+type PrismaJson = {
+  name: string;
+  price: number;
+};
+
 export default function POSPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -47,17 +54,29 @@ export default function POSPage() {
     });
   }, []);
 
-  const addToCart = (item: MenuItem) => {
+  const getVariants = (item: MenuItem): Variant[] => {
+    const variants = (item as any).variants;
+    if (!variants) return [];
+    if (Array.isArray(variants)) return variants as Variant[];
+    return [];
+  };
+
+  const addToCart = (item: MenuItem, variant: Variant) => {
+    if (!variant.price) return;
+    
+    const itemId = `${item.id}-${variant.name}`;
+    const itemName = `${item.name} (${variant.name})`;
+    
     setCart((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
+      const existing = prev.find((i) => i.id === itemId);
       if (existing) {
         return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === itemId ? { ...i, quantity: i.quantity + 1 } : i
         );
       }
       return [
         ...prev,
-        { id: item.id, name: item.name, price: item.price, quantity: 1 },
+        { id: itemId, name: itemName, price: variant.price, quantity: 1 },
       ];
     });
   };
@@ -171,18 +190,35 @@ export default function POSPage() {
         {/* Items Grid */}
         <div className="flex-1 overflow-y-auto">
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 pb-20">
-            {filteredItems.map((item) => (
-              <Card
-                key={item.id}
-                className="p-3 cursor-pointer border border-slate-200 shadow-sm hover:shadow-md transition-all active:scale-95 bg-white"
-                onClick={() => addToCart(item)}
-              >
-                <h3 className="font-bold line-clamp-1 text-slate-800">
-                  {item.name}
-                </h3>
-                <p className="text-orange-600 font-bold">₹{item.price}</p>
-              </Card>
-            ))}
+            {filteredItems.map((item) => {
+              const variants = getVariants(item);
+              return (
+                <Card
+                  key={item.id}
+                  className="p-3 border border-slate-200 shadow-sm bg-white"
+                >
+                  <h3 className="font-bold line-clamp-1 text-slate-800 mb-2">
+                    {item.name}
+                  </h3>
+                  <div className="space-y-1">
+                    {variants.length > 0 ? (
+                      variants.map((variant, idx) => (
+                        <div 
+                          key={idx}
+                          className="flex justify-between items-center cursor-pointer hover:bg-slate-50 p-1 rounded"
+                          onClick={() => addToCart(item, variant)}
+                        >
+                          <span className="text-xs text-slate-600">{variant.name}</span>
+                          <span className="text-orange-600 font-bold text-sm">₹{variant.price}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-xs text-slate-400">No variants</span>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </div>
