@@ -682,7 +682,7 @@ export default function CheckoutPage() {
               {/* Decorative Header */}
               <div className="absolute top-0 left-0 right-0 h-24 bg-orange-50 rounded-b-[50%] -mt-12 z-0" />
 
-              <div className="relative z-10 text-center mb-4 pt-2">
+              <div className="relative z-10 text-center mb-2 pt-2">
                 <h2 className="text-xl font-black text-slate-900 leading-none">
                   Payment
                 </h2>
@@ -721,10 +721,10 @@ export default function CheckoutPage() {
                 <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-4 flex flex-col items-center mb-4 relative z-10">
                   {/* Amount Display */}
                   <div className="mb-3 text-center">
-                    <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider mb-0.5">
+                    <p className="text-md text-slate-500 font-medium uppercase tracking-wider mb-0.5">
                       Total Payable
                     </p>
-                    <p className="text-2xl font-black text-slate-900">
+                    <p className="text-3xl font-black text-slate-900">
                       ₹{getTotalAmount()}
                     </p>
                   </div>
@@ -753,15 +753,18 @@ export default function CheckoutPage() {
                         <Info className="w-4 h-4 text-blue-600" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xs font-bold text-blue-900 leading-tight">
+                        <p className="text-md font-bold text-blue-900 leading-tight">
                           Verification Required
                         </p>
-                        <p className="text-[11px] text-blue-800 leading-normal">
+                        <p className="text-sm text-blue-800 leading-normal">
                           Please scan and pay{" "}
                           <strong>₹{getTotalAmount()}</strong>. After payment,{" "}
-                          <strong>share a screenshot</strong> with the seller to
+                          <strong>share a screenshot</strong> with the seller on Whatsapp to
                           confirm your order.
                         </p>
+                        <a href="https://wa.me/+919560232003">
+                        <button className="cursor-pointer border-1 border-green-800  px-4 py-2 my-4 rounded-full text-green-800 font-medium hover:bg-green-800 hover:text-white shadow-md shadow-green-200">Click here to open whatsapp</button>
+                        </a>
                       </div>
                     </div>
 
