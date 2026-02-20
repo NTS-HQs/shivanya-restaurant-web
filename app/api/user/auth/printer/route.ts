@@ -1,3 +1,4 @@
+// @ts-ignore
 import { NextRequest } from "next/server";
 import { WebSocketServer } from "ws";
 
