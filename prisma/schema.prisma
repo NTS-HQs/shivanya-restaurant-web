@@ -15,20 +15,21 @@ model Admin {
 }
 
 model RestaurantProfile {
-  id          String   @id @default(uuid())
-  name        String
-  ownerName   String
-  contact     String
-  address     String   @db.Text
-  bannerImage String?  // URL to banner image
-  paymentQrCode String? // URL to payment QR code
-  upiId       String?  // UPI ID / VPA for intent links
-  openTime    String // e.g., "10:00"
-  closeTime   String // e.g., "22:00"
-  isOpen      Boolean  @default(true)
-  autoAccept  Boolean  @default(false) // Auto-accept all orders
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String   @id @default(uuid())
+  name          String
+  ownerName     String
+  contact       String
+  address       String   @db.Text
+  gstNumber     String?
+  bannerImage   String?
+  paymentQrCode String?
+  upiId         String?
+  openTime      String
+  closeTime     String
+  isOpen        Boolean  @default(true)
+  autoAccept    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Category {
@@ -93,4 +94,34 @@ enum OrderStatus {
   ACCEPTED
   REJECTED
   DELIVERED
+}
+
+model User {
+  id                String   @id @default(uuid())
+  userId            Int      @unique @default(autoincrement())
+  phone             String   @unique
+  name              String?
+  email             String?  @unique
+  gender            String?
+  dob               String?
+  preference        String?
+  profile_image_url String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model OtpAttempt {
+  id           String   @id @default(uuid())
+  phoneNumber  String
+  otpHash      String
+  expiresAt    DateTime
+  ipAddress    String?
+  isSignup     Boolean  @default(false)
+  sessionId    String?
+  smsProvider  String?
+  smsStatus    String?
+  attempts     Int      @default(0)
+  verifiedAt   DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

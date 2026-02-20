@@ -31,6 +31,7 @@ type Profile = {
   ownerName: string;
   contact: string;
   address: string;
+  gstNumber?: string | null;
 } | null;
 
 interface PrintBillModalProps {
@@ -109,7 +110,7 @@ export default function PrintBillModal({
   <title>Bill - ${order.orderIdString}</title>
   <style>
     @page {
-      size: 80mm auto;
+      size: 110mm auto;
       margin: 0;
     }
     * {
@@ -119,84 +120,95 @@ export default function PrintBillModal({
     }
     body {
       font-family: 'Courier New', Courier, monospace;
-      font-size: 12px;
-      line-height: 1.3;
-      width: 80mm;
-      padding: 3mm;
+      font-size: 16px;
+      line-height: 1.4;
+      width: 110mm;
+      padding: 5mm;
       background: white;
       color: black;
     }
     .header {
       text-align: center;
       border-bottom: 2px dashed #000;
-      padding-bottom: 8px;
-      margin-bottom: 8px;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
     }
     .restaurant-name {
-      font-size: 16px;
+      font-size: 22px;
       font-weight: bold;
       text-transform: uppercase;
     }
-    .address {
-      font-size: 10px;
+    .gst-number {
+      font-size: 14px;
       margin-top: 4px;
+      font-weight: 500;
+    }
+    .address {
+      font-size: 14px;
+      margin-top: 6px;
     }
     .order-details {
       border-bottom: 1px dashed #000;
-      padding-bottom: 6px;
-      margin-bottom: 6px;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
     }
     .row {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 2px;
+      margin-bottom: 4px;
     }
     .items-table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 6px;
+      margin-bottom: 10px;
     }
     .items-header {
       border-bottom: 1px solid #000;
       font-weight: bold;
-      font-size: 10px;
+      font-size: 14px;
     }
     .items-header td {
-      padding-bottom: 4px;
+      padding-bottom: 6px;
     }
     .divider {
       border-top: 1px dashed #000;
-      margin: 6px 0;
+      margin: 10px 0;
     }
     .total {
       display: flex;
       justify-content: space-between;
       font-weight: bold;
-      font-size: 14px;
+      font-size: 20px;
       border-top: 2px solid #000;
       border-bottom: 2px solid #000;
-      padding: 6px 0;
-      margin: 6px 0;
+      padding: 10px 0;
+      margin: 10px 0;
     }
     .footer {
       text-align: center;
       border-top: 1px dashed #000;
-      padding-top: 8px;
-      margin-top: 8px;
+      padding-top: 12px;
+      margin-top: 12px;
     }
     .thank-you {
       font-weight: bold;
+      font-size: 16px;
     }
     .powered-by {
-      font-size: 8px;
+      font-size: 12px;
       color: #666;
-      margin-top: 6px;
+      margin-top: 8px;
     }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="restaurant-name">${profile?.name || "Restaurant"}</div>
+    ${
+      profile?.gstNumber
+        ? `<div class="gst-number">GSTIN: ${profile.gstNumber}</div>`
+        : ""
+    }
     <div class="address">${profile?.address || ""}</div>
     ${
       profile?.contact
@@ -237,7 +249,7 @@ export default function PrintBillModal({
       order.type === "DELIVERY" && order.address
         ? `
         <div class="divider"></div>
-        <div style="font-size: 10px; margin-top: 4px;">
+        <div style="font-size: 14px; margin-top: 6px;">
           <strong>DELIVERY ADDRESS:</strong><br/>
           ${order.address}
         </div>
@@ -282,7 +294,7 @@ export default function PrintBillModal({
   };
 
   const handlePrint = () => {
-    const printWindow = window.open("", "_blank", "width=320,height=600");
+    const printWindow = window.open("", "_blank", "width=450,height=700");
     if (printWindow) {
       printWindow.document.write(generateReceiptHTML());
       printWindow.document.close();
@@ -292,7 +304,7 @@ export default function PrintBillModal({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       {/* Modal Container */}
-      <div className="bg-white rounded-lg shadow-xl max-w-sm w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Modal Header */}
         <div className="sticky top-0 bg-white border-b px-4 py-3 flex justify-between items-center">
           <h2 className="text-lg font-semibold">Print Bill</h2>
@@ -305,24 +317,29 @@ export default function PrintBillModal({
         </div>
 
         {/* Receipt Preview */}
-        <div className="p-4 font-mono text-xs bg-gray-50">
+        <div className="p-4 font-mono text-sm bg-gray-50">
           {/* Restaurant Header */}
-          <div className="text-center border-b-2 border-dashed border-black pb-3 mb-3 bg-white p-3 rounded">
-            <h1 className="text-base font-bold uppercase">
+          <div className="text-center border-b-2 border-dashed border-black pb-4 mb-4 bg-white p-4 rounded">
+            <h1 className="text-xl font-bold uppercase">
               {profile?.name || "Restaurant"}
             </h1>
-            <p className="text-[10px] text-gray-600 mt-1">
+            {profile?.gstNumber && (
+              <p className="text-sm font-medium text-gray-700 mt-1">
+                GSTIN: {profile.gstNumber}
+              </p>
+            )}
+            <p className="text-sm text-gray-600 mt-2">
               {profile?.address || ""}
             </p>
             {profile?.contact && (
-              <p className="text-[10px] text-gray-600">
+              <p className="text-sm text-gray-600">
                 Tel: {formatPhone(profile.contact)}
               </p>
             )}
           </div>
 
           {/* Order Details */}
-          <div className="bg-white p-3 rounded border-b border-dashed border-gray-400 mb-2">
+          <div className="bg-white p-4 rounded border-b border-dashed border-gray-400 mb-3">
             <div className="flex justify-between">
               <span>Order #:</span>
               <span className="font-semibold">
@@ -348,11 +365,11 @@ export default function PrintBillModal({
               <span>{order.customerName}</span>
             </div>
             {order.type === "DELIVERY" && order.address && (
-              <div className="mt-2 pt-2 border-t border-dashed border-gray-200">
-                <span className="text-[10px] font-bold text-gray-400 block uppercase mb-1">
+              <div className="mt-3 pt-3 border-t border-dashed border-gray-200">
+                <span className="text-sm font-bold text-gray-400 block uppercase mb-1">
                   Delivery Address:
                 </span>
-                <p className="text-[10px] leading-tight text-gray-600">
+                <p className="text-sm leading-tight text-gray-600">
                   {order.address}
                 </p>
               </div>
@@ -360,17 +377,17 @@ export default function PrintBillModal({
           </div>
 
           {/* Items */}
-          <div className="bg-white p-3 rounded mb-2">
-            <div className="flex justify-between font-bold text-[10px] border-b border-black pb-1 mb-2">
+          <div className="bg-white p-4 rounded mb-3">
+            <div className="flex justify-between font-bold text-sm border-b border-black pb-2 mb-2">
               <span className="flex-1">ITEM</span>
-              <span className="w-8 text-center">QTY</span>
-              <span className="w-16 text-right">AMT</span>
+              <span className="w-10 text-center">QTY</span>
+              <span className="w-20 text-right">AMT</span>
             </div>
             {order.items.map((item) => (
-              <div key={item.id} className="flex justify-between mb-1">
+              <div key={item.id} className="flex justify-between mb-2">
                 <span className="flex-1 truncate pr-2">{item.name}</span>
-                <span className="w-8 text-center">{item.quantity}</span>
-                <span className="w-16 text-right">
+                <span className="w-10 text-center">{item.quantity}</span>
+                <span className="w-20 text-right">
                   ₹{(item.price * item.quantity).toFixed(2)}
                 </span>
               </div>
@@ -378,7 +395,7 @@ export default function PrintBillModal({
           </div>
 
           {/* Total */}
-          <div className="bg-white p-3 rounded flex justify-between font-bold text-sm border-y-2 border-black">
+          <div className="bg-white p-4 rounded flex justify-between font-bold text-lg border-y-2 border-black">
             <span>GRAND TOTAL</span>
             <span>₹{order.totalAmount.toFixed(2)}</span>
           </div>
@@ -387,10 +404,10 @@ export default function PrintBillModal({
         {/* Modal Footer */}
         <div className="sticky bottom-0 bg-white border-t px-4 py-3">
           {/* Thermal Printer Tip */}
-          <div className="text-[10px] text-gray-500 mb-3 bg-amber-50 p-2 rounded border border-amber-200">
-            <strong>🖨️ KOT/Thermal Printer:</strong> In print dialog, click
+          <div className="text-xs text-gray-500 mb-3 bg-amber-50 p-2 rounded border border-amber-200">
+            <strong>🖨️ Thermal Printer:</strong> In print dialog, click
             &quot;Print using the system dialog&quot; → Select your thermal
-            printer → Choose 80mm paper size
+            printer → Choose 110mm paper size for best results
           </div>
           <div className="flex gap-3 justify-end">
             <Button variant="outline" onClick={onClose}>

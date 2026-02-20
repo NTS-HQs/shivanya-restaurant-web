@@ -30,6 +30,7 @@ export default function SettingsPage() {
         ownerName: profile.ownerName,
         contact: profile.contact,
         address: profile.address,
+        gstNumber: profile.gstNumber || undefined,
         bannerImage: profile.bannerImage || undefined,
         autoAccept: profile.autoAccept,
         openTime: profile.openTime,
@@ -141,6 +142,19 @@ export default function SettingsPage() {
                     setProfile({ ...profile, contact: e.target.value })
                   }
                   placeholder="+91 98765 43210"
+                  className="bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">
+                  GST Number
+                </label>
+                <Input
+                  value={profile.gstNumber || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, gstNumber: e.target.value })
+                  }
+                  placeholder="e.g. 22AAAAA0000A1Z5"
                   className="bg-slate-50 border-slate-200 focus:bg-white transition-colors"
                 />
               </div>

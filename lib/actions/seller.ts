@@ -8,11 +8,11 @@ export async function updateRestaurantProfile(data: {
   ownerName?: string;
   contact?: string;
   address?: string;
+  gstNumber?: string;
   openTime?: string;
   closeTime?: string;
   isOpen?: boolean;
   bannerImage?: string;
-  // bannerImage removed (duplicate)
   paymentQrCode?: string;
   upiId?: string;
   autoAccept?: boolean;

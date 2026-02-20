@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/store/cart";
+import { useAuthStore } from "@/lib/stores/authStore";
 import { placeOrder } from "@/lib/actions/orders";
 import {
   ArrowLeft,
@@ -101,9 +102,16 @@ export default function CheckoutPage() {
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"UPI" | "CASH">("UPI");
 
+  const { isAuthenticated, user, checkTokenValidity } = useAuthStore();
+
+  const finalName = isAuthenticated
+    ? user?.name?.replace(/^User \\d{4}$/, "User") || ""
+    : customerName;
+  const finalPhone = isAuthenticated ? user?.phone || "" : customerMobile;
+
   const canProceed =
-    customerName.trim() &&
-    customerMobile.trim().length >= 10 &&
+    finalName.trim() &&
+    finalPhone.trim().length >= 10 &&
     orderType &&
     (orderType !== "DINE_IN" || tableNumber.trim()) &&
     (orderType !== "TAKEAWAY" || pickupTime.trim()) &&
@@ -138,11 +146,17 @@ export default function CheckoutPage() {
   }, [upiUri]);
 
   const handleConfirmPayment = async () => {
+    if (!isAuthenticated || !checkTokenValidity() || !user) {
+      alert("You must be logged in to place an order.");
+      router.push("/login");
+      return;
+    }
+
     setIsPlacing(true);
     try {
       const result = await placeOrder({
-        customerName,
-        customerMobile,
+        customerName: user.name || customerName,
+        customerMobile: user.phone || customerMobile,
         type: orderType!,
         tableNumber: orderType === "DINE_IN" ? tableNumber : undefined,
         address:
@@ -355,9 +369,14 @@ export default function CheckoutPage() {
                   <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
                   <Input
                     placeholder="Your Name"
-                    value={customerName}
+                    value={
+                      isAuthenticated
+                        ? user?.name?.replace(/^User \\d{4}$/, "User") || ""
+                        : customerName
+                    }
                     onChange={(e) => setCustomerName(e.target.value)}
-                    className="pl-12 h-14 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80"
+                    disabled={isAuthenticated}
+                    className="pl-12 h-14 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 disabled:opacity-70 disabled:cursor-not-allowed"
                   />
                 </div>
                 <div className="relative group">
@@ -365,9 +384,10 @@ export default function CheckoutPage() {
                   <Input
                     placeholder="Mobile Number"
                     type="tel"
-                    value={customerMobile}
+                    value={isAuthenticated ? user?.phone || "" : customerMobile}
                     onChange={(e) => setCustomerMobile(e.target.value)}
-                    className="pl-12 h-14 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80"
+                    disabled={isAuthenticated}
+                    className="pl-12 h-14 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 disabled:opacity-70 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -759,11 +779,13 @@ export default function CheckoutPage() {
                         <p className="text-sm text-blue-800 leading-normal">
                           Please scan and pay{" "}
                           <strong>₹{getTotalAmount()}</strong>. After payment,{" "}
-                          <strong>share a screenshot</strong> with the seller on Whatsapp to
-                          confirm your order.
+                          <strong>share a screenshot</strong> with the seller on
+                          Whatsapp to confirm your order.
                         </p>
                         <a href="https://wa.me/+919560232003">
-                        <button className="cursor-pointer border-1 border-green-800  px-4 py-2 my-4 rounded-full text-green-800 font-medium hover:bg-green-800 hover:text-white shadow-md shadow-green-200">Click here to open whatsapp</button>
+                          <button className="cursor-pointer border-1 border-green-800  px-4 py-2 my-4 rounded-full text-green-800 font-medium hover:bg-green-800 hover:text-white shadow-md shadow-green-200">
+                            Click here to open whatsapp
+                          </button>
                         </a>
                       </div>
                     </div>

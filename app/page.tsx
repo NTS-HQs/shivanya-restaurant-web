@@ -3,9 +3,9 @@ import events from "./eventspage/page";
 import { getRestaurantProfile } from "@/lib/actions/menu";
 import { Badge } from "@/components/ui/badge";
 import { BentoCard } from "@/components/ui/bento-card";
-import "../public/shivanya_logo.png"
-import "../public/insta_icon.png"
-import "../public/wa_icon.png"
+import "../public/shivanya_logo.png";
+import "../public/insta_icon.png";
+import "../public/wa_icon.png";
 import {
   Phone,
   MapPin,
@@ -16,6 +16,8 @@ import {
   ArrowRight,
   ExternalLink,
 } from "lucide-react";
+
+import { HeaderAuth } from "@/components/HeaderAuth";
 
 export default async function HomePage() {
   const profile = await getRestaurantProfile();
@@ -49,35 +51,55 @@ export default async function HomePage() {
               {profile.name}
             </span>
           </div>
-          <Badge
-            variant="outline"
-            className={`rounded-full px-4 py-1.5 border-0 font-bold ${profile.isOpen
-              ? "bg-green-100 text-green-700 ring-1 ring-green-200"
-              : "bg-red-100 text-red-700 ring-1 ring-red-200"
+          <div className="flex items-center gap-3">
+            <Badge
+              variant="outline"
+              className={`rounded-full px-4 py-1.5 border-0 font-bold ${
+                profile.isOpen
+                  ? "bg-green-100 text-green-700 ring-1 ring-green-200"
+                  : "bg-red-100 text-red-700 ring-1 ring-red-200"
               }`}
-          >
-            <span
-              className={`w-2 h-2 rounded-full mr-2 ${profile.isOpen ? "bg-green-600 animate-pulse" : "bg-red-600"
+            >
+              <span
+                className={`w-2 h-2 rounded-full mr-2 ${
+                  profile.isOpen ? "bg-green-600 animate-pulse" : "bg-red-600"
                 }`}
-            />
-            {profile.isOpen ? "Open Now" : "Closed"}
-          </Badge>
+              />
+              {profile.isOpen ? "Open Now" : "Closed"}
+            </Badge>
+            <HeaderAuth />
+          </div>
         </header>
 
         {/* horizontally scrolling line */}
         <div className="w-full overflow-hidden bg-gray-100 py-2">
           <div className="animate-scroll whitespace-nowrap flex gap-10">
-            <span className="text-sm font-medium text-gray-800">🔥 50% OFF on all Electronics</span>
-            <span className="text-sm font-medium text-gray-800">🚚 Free Shipping on orders above $49</span>
-            <span className="text-sm font-medium text-gray-800">💳 Extra 10% OFF with Credit Cards</span>
-            <span className="text-sm font-medium text-gray-800">🎁 Buy 1 Get 1 Free on Select Products</span>
-            <span className="text-sm font-medium text-gray-800">🔥 50% OFF on all Electronics</span>
-            <span className="text-sm font-medium text-gray-800">🚚 Free Shipping on orders above $49</span>
-            <span className="text-sm font-medium text-gray-800">💳 Extra 10% OFF with Credit Cards</span>
-            <span className="text-sm font-medium text-gray-800">🎁 Buy 1 Get 1 Free on Select Products</span>
+            <span className="text-sm font-medium text-gray-800">
+              🔥 50% OFF on all Electronics
+            </span>
+            <span className="text-sm font-medium text-gray-800">
+              🚚 Free Shipping on orders above $49
+            </span>
+            <span className="text-sm font-medium text-gray-800">
+              💳 Extra 10% OFF with Credit Cards
+            </span>
+            <span className="text-sm font-medium text-gray-800">
+              🎁 Buy 1 Get 1 Free on Select Products
+            </span>
+            <span className="text-sm font-medium text-gray-800">
+              🔥 50% OFF on all Electronics
+            </span>
+            <span className="text-sm font-medium text-gray-800">
+              🚚 Free Shipping on orders above $49
+            </span>
+            <span className="text-sm font-medium text-gray-800">
+              💳 Extra 10% OFF with Credit Cards
+            </span>
+            <span className="text-sm font-medium text-gray-800">
+              🎁 Buy 1 Get 1 Free on Select Products
+            </span>
           </div>
         </div>
-
 
         {/* 2. Hero Section - Mobile First */}
         <div className="relative h-[40vh] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200 group">
@@ -290,7 +312,17 @@ export default async function HomePage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-full -mr-16 -mt-16 z-0 opacity-50 pointer-events-none" />
         </div>
 
-        <div className="bg-white rounded-[2rem] p-6 md:p-16  shadow-sm border border-slate-100 text-center text-lg " >STEP INTO THE REALM OF TASTE AND DEVOTION AT "SHIVANYA RESTAURANT."' A PLACE WHERE FLAVORS TRANSCEND AND SPIRITUALITY SINGS. THE NAME "SHIVANYA" PAYS HOMAGE TO THE POWERFUL FUSION OF TWO WORDS: "SHIVA." THE BENEVOLENT DEITY, AND "ANYA," REPRESENTING UNIQUENESS. JUST AS LORD SHIVA EMBODIES PURITY AND STRENGTH, OUT ESTABLISHMENT BRINGS YOU A UNIQUE DINING EXPERIENCE. WHERE EACH DISH IS CRAFTED WITH THE SAME DEDICATION AND LOVE. JOIN US AS WE BLEND THE ART OF VEGETARIAN CUISINE WITH THE DIVINE. MAKING YOUR DINING EXPERIENCE AN ODE TO BOTH THE SENSES AND THE SOUL.</div>
+        <div className="bg-white rounded-[2rem] p-6 md:p-16  shadow-sm border border-slate-100 text-center text-lg ">
+          STEP INTO THE REALM OF TASTE AND DEVOTION AT "SHIVANYA RESTAURANT."' A
+          PLACE WHERE FLAVORS TRANSCEND AND SPIRITUALITY SINGS. THE NAME
+          "SHIVANYA" PAYS HOMAGE TO THE POWERFUL FUSION OF TWO WORDS: "SHIVA."
+          THE BENEVOLENT DEITY, AND "ANYA," REPRESENTING UNIQUENESS. JUST AS
+          LORD SHIVA EMBODIES PURITY AND STRENGTH, OUT ESTABLISHMENT BRINGS YOU
+          A UNIQUE DINING EXPERIENCE. WHERE EACH DISH IS CRAFTED WITH THE SAME
+          DEDICATION AND LOVE. JOIN US AS WE BLEND THE ART OF VEGETARIAN CUISINE
+          WITH THE DIVINE. MAKING YOUR DINING EXPERIENCE AN ODE TO BOTH THE
+          SENSES AND THE SOUL.
+        </div>
 
         <footer className="pt-8 pb-4 text-center space-y-2">
           <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest">
@@ -308,13 +340,13 @@ export default async function HomePage() {
           <p className="text-slate-400 text-sm font-medium">
             © {new Date().getFullYear()} {profile.name}. All rights reserved.
           </p>
-
         </footer>
         <a href="https://wa.me/+919560232003">
           <div className="flex items-center w-46 border-1 bg-white text-lg border-green-700 px-2 py-2 rounded-full fixed right-4 bottom-4 z-50 shadow-green-100 shadow-2xl">
-            <img src="wa_icon.png" className="w-12 h-12" />Chat with us
+            <img src="wa_icon.png" className="w-12 h-12" />
+            Chat with us
           </div>
-          </a>
+        </a>
       </div>
     </main>
   );
