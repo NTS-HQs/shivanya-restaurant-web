@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { OrderType, OrderStatus } from "@prisma/client";
+import { sendToPrinter } from "@/lib/printer";
 
 type CartItem = {
   id: string;
@@ -31,28 +32,17 @@ export async function placeOrder(input: PlaceOrderInput) {
     ? OrderStatus.DELIVERED
     : OrderStatus.PENDING;
 
-  // Verify all items exist in the database to prevent foreign key violations
-  // Extract base item IDs from composite IDs (format: "itemId-variantName")
-  // Note: itemId is a UUID which already contains dashes
+  // Extract base menu item IDs
   const menuItemIds = input.items.map((i) => {
-    // Handle both old format (just itemId) and new format (itemId-variantName)
-    // For UUID-variantName format, we need to remove the last segment (variant name)
-    const parts = i.id.split('-');
-    // If last part is a variant name (not a valid UUID segment), remove it
-    // UUID segments are exactly 8-4-4-4-12 hex characters
+    const parts = i.id.split("-");
     const lastPart = parts[parts.length - 1];
-    const isLastPartVariant = !/^[0-9a-fA-F]{12}$/.test(lastPart) && parts.length > 5;
-    
-    if (isLastPartVariant) {
-      // Remove the last part (variant name)
-      return parts.slice(0, -1).join('-');
-    }
-    // Old format or no variant
-    return i.id;
+    const isVariant = !/^[0-9a-fA-F]{12}$/.test(lastPart) && parts.length > 5;
+
+    return isVariant ? parts.slice(0, -1).join("-") : i.id;
   });
-  
+
   const uniqueMenuItemIds = [...new Set(menuItemIds)];
-  
+
   const existingItems = await prisma.menuItem.findMany({
     where: { id: { in: uniqueMenuItemIds } },
     select: { id: true },
@@ -66,6 +56,7 @@ export async function placeOrder(input: PlaceOrderInput) {
     };
   }
 
+  // Create order
   const order = await prisma.order.create({
     data: {
       customerName: input.customerName || "Counter Customer",
@@ -78,15 +69,15 @@ export async function placeOrder(input: PlaceOrderInput) {
       totalAmount,
       items: {
         create: input.items.map((item) => {
-          // Extract base item ID from composite ID (UUID-variantName format)
-          const parts = item.id.split('-');
+          const parts = item.id.split("-");
           const lastPart = parts[parts.length - 1];
-          const isLastPartVariant = !/^[0-9a-fA-F]{12}$/.test(lastPart) && parts.length > 5;
-          
-          const menuItemId = isLastPartVariant 
-            ? parts.slice(0, -1).join('-') 
+          const isVariant =
+            !/^[0-9a-fA-F]{12}$/.test(lastPart) && parts.length > 5;
+
+          const menuItemId = isVariant
+            ? parts.slice(0, -1).join("-")
             : item.id;
-          
+
           return {
             menuItemId,
             name: item.name,
@@ -99,33 +90,49 @@ export async function placeOrder(input: PlaceOrderInput) {
     include: { items: true },
   });
 
+  /* ---------------- PRINT TRIGGER ---------------- */
+
+  const printText = `
+ORDER #${order.orderIdString}
+------------------------------
+${order.items.map(i => `${i.name} x ${i.quantity}`).join("\n")}
+------------------------------
+TOTAL: ₹${order.totalAmount}
+`;
+
+  console.log("🖨 Sending to printer:", order.orderIdString);
+
+  sendToPrinter(printText);
+
+  /* ------------------------------------------------ */
+
   return { success: true, orderId: order.orderIdString, order };
 }
 
+/* ---------------- FETCH ORDER ---------------- */
+
 export async function getOrderByIdString(orderIdString: string) {
-  const order = await prisma.order.findUnique({
+  return prisma.order.findUnique({
     where: { orderIdString },
     include: { items: true },
   });
-  return order;
 }
 
-// Seller actions
+/* ---------------- SELLER ACTIONS ---------------- */
+
 export async function getPendingOrders() {
-  const orders = await prisma.order.findMany({
+  return prisma.order.findMany({
     where: { status: OrderStatus.PENDING },
     include: { items: true },
     orderBy: { createdAt: "desc" },
   });
-  return orders;
 }
 
 export async function getAllOrders() {
-  const orders = await prisma.order.findMany({
+  return prisma.order.findMany({
     include: { items: true },
     orderBy: { createdAt: "desc" },
   });
-  return orders;
 }
 
 export async function updateOrderStatus(
@@ -133,7 +140,7 @@ export async function updateOrderStatus(
   status: "ACCEPTED" | "REJECTED" | "DELIVERED",
   rejectionReason?: string
 ) {
-  const order = await prisma.order.update({
+  return prisma.order.update({
     where: { id: orderId },
     data: {
       status: status as OrderStatus,
@@ -141,8 +148,9 @@ export async function updateOrderStatus(
         status === "REJECTED" && rejectionReason ? rejectionReason : undefined,
     },
   });
-  return order;
 }
+
+/* ---------------- DASHBOARD STATS ---------------- */
 
 export async function getDashboardStats() {
   const today = new Date();
