@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { OrderType, OrderStatus } from "@prisma/client";
-import { sendToPrinter } from "@/lib/printer";
+import { sendToPrinter } from "@/lib/printerSocket";
 
 type CartItem = {
   id: string;
