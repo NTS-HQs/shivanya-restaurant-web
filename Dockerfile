@@ -74,9 +74,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 USER nextjs
 
-# Railway injects $PORT automatically; default to 3000
-EXPOSE 3000
-ENV PORT=3000
+# Railway injects $PORT automatically; default to 8080
+EXPOSE 8080
+ENV PORT=8080
 
 # At startup:
 #  1. Push schema changes to DB (idempotent, safe to run every deploy)

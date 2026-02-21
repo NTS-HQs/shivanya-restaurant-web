@@ -145,6 +145,7 @@ export async function getOrderByIdString(orderIdString: string) {
 /* ---------------- SELLER ACTIONS ---------------- */
 
 export async function getPendingOrders() {
+  if (!process.env.DATABASE_URL) return [];
   return prisma.order.findMany({
     where: { status: OrderStatus.PENDING },
     include: { items: true },
@@ -177,6 +178,13 @@ export async function updateOrderStatus(
 /* ---------------- DASHBOARD STATS ---------------- */
 
 export async function getDashboardStats() {
+  if (!process.env.DATABASE_URL)
+    return {
+      totalOrders: 0,
+      pendingOrders: 0,
+      deliveredOrders: 0,
+      todaySales: 0,
+    };
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 

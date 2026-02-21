@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 
 export async function getRestaurantProfile() {
+  if (!process.env.DATABASE_URL) return null;
   const profile = await prisma.restaurantProfile.findFirst();
 
   if (profile && profile.openTime && profile.closeTime) {
@@ -32,6 +33,7 @@ export async function getRestaurantProfile() {
 }
 
 export async function getMenuWithCategories() {
+  if (!process.env.DATABASE_URL) return [];
   const categories = await prisma.category.findMany({
     include: {
       items: {
@@ -44,6 +46,7 @@ export async function getMenuWithCategories() {
 }
 
 export async function getAllMenuItems() {
+  if (!process.env.DATABASE_URL) return [];
   const items = await prisma.menuItem.findMany({
     include: { category: true },
     orderBy: { name: "asc" },
