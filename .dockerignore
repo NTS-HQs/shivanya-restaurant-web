@@ -1,0 +1,37 @@
+# ── Dependencies (reinstalled inside Docker) ──────────────────────────────────
+node_modules
+printer-bridge/node_modules
+
+# ── Next.js build cache ────────────────────────────────────────────────────────
+.next
+out
+
+# ── Environment / secrets — NEVER bake into image ─────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Dev tooling & docs ────────────────────────────────────────────────────────
+.git
+.gitignore
+README.md
+PRINTER_SETUP.md
+*.md
+
+# ── Editor & OS ───────────────────────────────────────────────────────────────
+.vscode
+.idea
+*.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+
+# ── Test & CI ─────────────────────────────────────────────────────────────────
+*.test.ts
+*.spec.ts
+coverage
+
+# ── Local printer bridge (runs on restaurant PC, not in Railway) ───────────────
+printer-bridge
