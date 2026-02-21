@@ -125,3 +125,13 @@ model OtpAttempt {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userType  String   @default("admin")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

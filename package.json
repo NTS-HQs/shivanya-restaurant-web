@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "cross-env NODE_ENV=development node server.js",
     "build": "prisma db push --accept-data-loss && next build",
     "postinstall": "prisma generate",
-    "start": "next start",
+    "start": "node server.js",
     "lint": "eslint"
   },
   "dependencies": {
@@ -27,6 +27,7 @@
     "react-qr-code": "^2.0.18",
     "swr": "^2.4.0",
     "tailwind-merge": "^3.4.0",
+    "web-push": "^3.6.7",
     "ws": "^8.19.0",
     "zustand": "^5.0.11"
   },
@@ -36,7 +37,9 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "@types/ws": "^8.18.1",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "prisma": "^5.22.0",

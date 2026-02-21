@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/db";
 import { OrderType, OrderStatus } from "@prisma/client";
 import { sendToPrinter } from "@/lib/printerSocket";
+import { sendPushNotification } from "@/lib/pushNotification";
 
 type CartItem = {
   id: string;
@@ -24,7 +25,7 @@ type PlaceOrderInput = {
 export async function placeOrder(input: PlaceOrderInput) {
   const totalAmount = input.items.reduce(
     (sum, item) => sum + (item.price || 0) * item.quantity,
-    0
+    0,
   );
 
   const profile = await prisma.restaurantProfile.findFirst();
@@ -74,9 +75,7 @@ export async function placeOrder(input: PlaceOrderInput) {
           const isVariant =
             !/^[0-9a-fA-F]{12}$/.test(lastPart) && parts.length > 5;
 
-          const menuItemId = isVariant
-            ? parts.slice(0, -1).join("-")
-            : item.id;
+          const menuItemId = isVariant ? parts.slice(0, -1).join("-") : item.id;
 
           return {
             menuItemId,
@@ -90,21 +89,46 @@ export async function placeOrder(input: PlaceOrderInput) {
     include: { items: true },
   });
 
-  /* ---------------- PRINT TRIGGER ---------------- */
+  /* ── Auto Print ── */
+  sendToPrinter({
+    type: "ORDER_PRINT",
+    order: {
+      id: order.id,
+      orderIdString: order.orderIdString,
+      customerName: order.customerName,
+      customerMobile: order.customerMobile,
+      tableNumber: order.tableNumber,
+      address: order.address,
+      pickupTime: order.pickupTime,
+      type: order.type,
+      totalAmount: order.totalAmount,
+      items: order.items.map((i) => ({
+        name: i.name,
+        quantity: i.quantity,
+        price: i.price,
+      })),
+      createdAt: order.createdAt.toISOString(),
+    },
+  });
 
-  const printText = `
-ORDER #${order.orderIdString}
-------------------------------
-${order.items.map(i => `${i.name} x ${i.quantity}`).join("\n")}
-------------------------------
-TOTAL: ₹${order.totalAmount}
-`;
+  /* ── Push Notification to Admin ── */
+  const typeLabel =
+    order.type === "DINE_IN"
+      ? `Table ${order.tableNumber}`
+      : order.type === "TAKEAWAY"
+        ? "Takeaway"
+        : "Delivery";
 
-  console.log("🖨 Sending to printer:", order.orderIdString);
+  sendPushNotification(
+    {
+      title: "🍽️ New Order Received!",
+      body: `${typeLabel} · ₹${order.totalAmount} · ${order.customerName}`,
+      url: "/admin/orders",
+    },
+    "admin",
+  ).catch((err) => console.error("Push notify failed (non-blocking):", err));
 
-  sendToPrinter(printText);
-
-  /* ------------------------------------------------ */
+  /* ─────────────────────────────── */
 
   return { success: true, orderId: order.orderIdString, order };
 }
@@ -138,7 +162,7 @@ export async function getAllOrders() {
 export async function updateOrderStatus(
   orderId: string,
   status: "ACCEPTED" | "REJECTED" | "DELIVERED",
-  rejectionReason?: string
+  rejectionReason?: string,
 ) {
   return prisma.order.update({
     where: { id: orderId },

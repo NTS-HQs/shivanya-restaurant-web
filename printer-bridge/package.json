@@ -1,0 +1,15 @@
+{
+  "name": "shivanya-printer-bridge",
+  "version": "1.0.0",
+  "description": "Local printer bridge for Shivanya Restaurant — runs on restaurant PC",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-thermal-printer": "^4.4.1",
+    "ws": "^8.18.0"
+  }
+}

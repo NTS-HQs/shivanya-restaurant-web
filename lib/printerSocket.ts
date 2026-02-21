@@ -1,23 +1,49 @@
-import WebSocket, { WebSocketServer } from "ws";
+import WebSocket from "ws";
 
-const wss = new WebSocketServer({ port: 8080 });
+export type PrintPayload = {
+  type: "ORDER_PRINT";
+  order: {
+    id: string;
+    orderIdString: string;
+    customerName: string;
+    customerMobile: string;
+    tableNumber?: string | null;
+    address?: string | null;
+    pickupTime?: string | null;
+    type: string;
+    totalAmount: number;
+    items: { name: string; quantity: number; price: number }[];
+    createdAt: string;
+  };
+};
 
-let clients: WebSocket[] = [];
+/**
+ * Sends a print payload to the restaurant PC bridge.
+ * The WebSocket client is managed by server.js in global.printerWsClient.
+ * Returns true if sent, false if bridge is not connected.
+ */
+export function sendToPrinter(payload: PrintPayload): boolean {
+  const client = (global as any).printerWsClient as WebSocket | null;
 
-wss.on("connection", ws => {
-  clients.push(ws);
+  if (!client || client.readyState !== WebSocket.OPEN) {
+    console.warn("⚠️  sendToPrinter: No printer bridge connected");
+    return false;
+  }
 
-  ws.on("close", () => {
-    clients = clients.filter(c => c !== ws);
-  });
-});
-
-export function sendToPrinter(html: string){
-  clients.forEach(c=>{
-    if(c.readyState === WebSocket.OPEN){
-      c.send(JSON.stringify({ html }));
-    }
-  });
+  try {
+    client.send(JSON.stringify(payload));
+    console.log(`🖨️  Print job sent: Order #${payload.order.orderIdString}`);
+    return true;
+  } catch (err) {
+    console.error("🖨️  Failed to send print job:", err);
+    return false;
+  }
 }
 
-console.log("🖨 Printer socket running on 8080");
+/**
+ * Returns current printer bridge connection status.
+ */
+export function isPrinterConnected(): boolean {
+  const client = (global as any).printerWsClient as WebSocket | null;
+  return !!client && client.readyState === WebSocket.OPEN;
+}
