@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import {
   getMenuWithCategories,
   getRestaurantProfile,
@@ -10,7 +12,9 @@ type Variant = {
 };
 
 // Transform categories to properly type the variants
-function transformCategories(categories: Awaited<ReturnType<typeof getMenuWithCategories>>) {
+function transformCategories(
+  categories: Awaited<ReturnType<typeof getMenuWithCategories>>,
+) {
   return categories.map((category) => ({
     ...category,
     items: category.items.map((item) => ({

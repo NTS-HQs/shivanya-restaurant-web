@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getDashboardStats, getPendingOrders } from "@/lib/actions/orders";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import events from "./eventspage/page";
 import { getRestaurantProfile } from "@/lib/actions/menu";
