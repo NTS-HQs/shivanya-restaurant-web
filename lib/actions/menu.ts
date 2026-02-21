@@ -4,7 +4,22 @@ import { prisma } from "@/lib/db";
 
 export async function getRestaurantProfile() {
   if (!process.env.DATABASE_URL) return null;
-  const profile = await prisma.restaurantProfile.findFirst();
+  let profile = await prisma.restaurantProfile.findFirst();
+
+  // Auto-create default profile on first deploy so the settings page never infinite-spins
+  if (!profile) {
+    profile = await prisma.restaurantProfile.create({
+      data: {
+        name: "My Restaurant",
+        ownerName: "Owner",
+        contact: "",
+        address: "",
+        openTime: "10:00",
+        closeTime: "23:00",
+        isOpen: true,
+      },
+    });
+  }
 
   if (profile && profile.openTime && profile.closeTime) {
     // Simple time comparison "HH:mm"

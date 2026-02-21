@@ -78,7 +78,7 @@ export default function SettingsPage() {
           disabled={isPending || saved}
           size="lg"
           className={`
-            min-w-[140px] font-semibold shadow-md transition-all
+            min-w-35 font-semibold shadow-md transition-all
             ${
               saved
                 ? "bg-green-600 hover:bg-green-700"
@@ -175,7 +175,7 @@ export default function SettingsPage() {
                   Physical Address
                 </label>
                 <textarea
-                  className="w-full min-h-[100px] p-3 rounded-md border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all resize-y text-sm"
+                  className="w-full min-h-25 p-3 rounded-md border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all resize-y text-sm"
                   value={profile.address}
                   onChange={(e) =>
                     setProfile({ ...profile, address: e.target.value })

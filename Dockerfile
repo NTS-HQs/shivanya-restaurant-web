@@ -30,6 +30,17 @@ COPY . .
 # Ensure Prisma client is up to date with schema
 RUN npx prisma generate
 
+# Declare NEXT_PUBLIC_* build args so Railway injects them during docker build.
+# These are baked into the JS bundle by `next build` — they MUST exist at build time.
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
+ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+ARG NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=$NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+ENV NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=$NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
+
 # Build Next.js app
 # NOTE: `prisma db push` is intentionally skipped here — no live DB during image build.
 #       It runs at container startup in CMD below.

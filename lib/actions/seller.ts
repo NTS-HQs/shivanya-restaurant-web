@@ -27,6 +27,8 @@ export async function updateRestaurantProfile(data: {
   revalidatePath("/");
   revalidatePath("/menu");
   revalidatePath("/checkout");
+  revalidatePath("/admin/dashboard");
+  revalidatePath("/admin/settings");
   return updated;
 }
 
@@ -53,11 +55,11 @@ export async function createMenuItem(data: {
   isVeg: boolean;
   categoryId: string;
 }) {
-  const item = await prisma.menuItem.create({ 
+  const item = await prisma.menuItem.create({
     data: {
       ...data,
       variants: data.variants as any,
-    }
+    },
   });
   revalidatePath("/menu");
   revalidatePath("/admin/pos");
@@ -74,7 +76,7 @@ export async function updateMenuItem(
     isVeg?: boolean;
     isAvailable?: boolean;
     categoryId?: string;
-  }
+  },
 ) {
   const item = await prisma.menuItem.update({
     where: { id: itemId },
