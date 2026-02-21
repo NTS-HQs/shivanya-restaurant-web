@@ -1,12 +1,5 @@
 import webpush from "web-push";
 
-// Configure VAPID once when module loads
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!,
-);
-
 export type PushPayload = {
   title: string;
   body: string;
@@ -22,6 +15,12 @@ export async function sendPushNotification(
   payload: PushPayload,
   userType: "admin" | "user" = "admin",
 ) {
+  // Configure VAPID lazily at runtime — never at build time
+  webpush.setVapidDetails(
+    process.env.VAPID_EMAIL!,
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!,
+  );
   // Lazy import prisma to avoid circular deps
   const { prisma } = await import("@/lib/db");
 
