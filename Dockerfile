@@ -90,7 +90,6 @@ EXPOSE 8080
 ENV PORT=8080
 
 # At startup:
-#  1. Run pending migrations (safe — no data loss)
-#  2. Start custom Node.js server (HTTP + WebSocket printer bridge)
+# Start custom Node.js server (HTTP + WebSocket printer bridge)
 CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
 
