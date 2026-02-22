@@ -6,7 +6,7 @@ import { verifyOTP } from "@/lib/authApi";
 import { useAuthStore } from "@/lib/stores/authStore";
 
 const OTPVerificationContent = () => {
-  const [otp, setOtp] = useState(["", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -34,24 +34,40 @@ const OTPVerificationContent = () => {
     setOtp(newOtp);
 
     // Auto focus next input
-    if (value && index < 3 && inputRefs.current[index + 1]) {
+    if (value && index < 5 && inputRefs.current[index + 1]) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyDown = (
     index: number,
-    e: React.KeyboardEvent<HTMLInputElement>
+    e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const digits = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
+    if (!digits) return;
+    const newOtp = ["", "", "", "", "", ""];
+    digits.split("").forEach((d, i) => {
+      newOtp[i] = d;
+    });
+    setOtp(newOtp);
+    const nextEmpty = Math.min(digits.length, 5);
+    inputRefs.current[nextEmpty]?.focus();
+  };
+
   const handleVerify = async () => {
     const otpValue = otp.join("");
-    if (otpValue.length !== 4) {
-      setError("Please enter a valid 4-digit OTP");
+    if (otpValue.length !== 6) {
+      setError("Please enter a valid 6-digit OTP");
       return;
     }
 
@@ -62,7 +78,7 @@ const OTPVerificationContent = () => {
       const response = await verifyOTP(
         phoneNumber!,
         otpValue,
-        isSignup ? signUpName : undefined
+        isSignup ? signUpName : undefined,
       );
       if (response.success) {
         setAuth({
@@ -104,7 +120,7 @@ const OTPVerificationContent = () => {
             </div>
           )}
 
-          <div className="flex gap-4 justify-center mb-8">
+          <div className="flex gap-2 justify-center mb-8">
             {otp.map((digit, index) => (
               <input
                 key={index}
@@ -112,12 +128,14 @@ const OTPVerificationContent = () => {
                   inputRefs.current[index] = el;
                 }}
                 type="text"
+                inputMode="numeric"
                 maxLength={1}
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
+                onPaste={handlePaste}
                 disabled={loading}
-                className="w-14 h-16 text-center text-2xl font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all text-slate-800"
+                className="w-11 h-14 text-center text-xl font-bold bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all text-slate-800"
               />
             ))}
           </div>
@@ -143,7 +161,7 @@ const OTPVerificationContent = () => {
             onClick={handleVerify}
             disabled={
               loading ||
-              otp.join("").length !== 4 ||
+              otp.join("").length !== 6 ||
               (isSignup && signUpName.trim().length === 0)
             }
             className="w-full bg-orange-500 hover:bg-orange-600 active:scale-95 text-white font-bold text-lg py-3.5 rounded-xl transition-all shadow-lg shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"

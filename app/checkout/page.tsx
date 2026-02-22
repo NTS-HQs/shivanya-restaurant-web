@@ -106,7 +106,7 @@ export default function CheckoutPage() {
   // ── Inline OTP verification ───────────────────────────────────────────────
   type OtpStep = "idle" | "sending" | "sent" | "verifying";
   const [otpStep, setOtpStep] = useState<OtpStep>("idle");
-  const [otpValues, setOtpValues] = useState(["", "", "", ""]);
+  const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const [otpError, setOtpError] = useState("");
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -129,7 +129,7 @@ export default function CheckoutPage() {
     const updated = [...otpValues];
     updated[index] = value.slice(-1);
     setOtpValues(updated);
-    if (value && index < 3) otpRefs.current[index + 1]?.focus();
+    if (value && index < 5) otpRefs.current[index + 1]?.focus();
   };
 
   const handleOtpKeyDown = (
@@ -138,6 +138,22 @@ export default function CheckoutPage() {
   ) => {
     if (e.key === "Backspace" && !otpValues[index] && index > 0)
       otpRefs.current[index - 1]?.focus();
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const digits = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 6);
+    if (!digits) return;
+    const updated = ["", "", "", "", "", ""];
+    digits.split("").forEach((d, i) => {
+      updated[i] = d;
+    });
+    setOtpValues(updated);
+    const nextEmpty = Math.min(digits.length, 5);
+    otpRefs.current[nextEmpty]?.focus();
   };
 
   const handleVerifyOtp = async () => {
@@ -153,7 +169,7 @@ export default function CheckoutPage() {
       );
       if (res.tokens && res.user) {
         setAuth({ user: res.user, tokens: res.tokens });
-        setOtpValues(["", "", "", ""]);
+        setOtpValues(["", "", "", "", "", ""]);
       } else {
         setOtpError("Verification failed. Please try again.");
         setOtpStep("sent");
@@ -495,7 +511,7 @@ export default function CheckoutPage() {
 
                         {otpStep === "sent" || otpStep === "verifying" ? (
                           <div className="space-y-3">
-                            <div className="flex gap-3 justify-center">
+                            <div className="flex gap-2 justify-center">
                               {otpValues.map((val, i) => (
                                 <input
                                   key={i}
@@ -510,7 +526,8 @@ export default function CheckoutPage() {
                                     handleOtpChange(i, e.target.value)
                                   }
                                   onKeyDown={(e) => handleOtpKeyDown(i, e)}
-                                  className="w-12 h-12 text-center text-xl font-black rounded-xl bg-white border-2 border-slate-200 focus:border-orange-400 focus:outline-none transition-colors shadow-sm"
+                                  onPaste={handleOtpPaste}
+                                  className="w-10 h-12 text-center text-lg font-black rounded-xl bg-white border-2 border-slate-200 focus:border-orange-400 focus:outline-none transition-colors shadow-sm"
                                 />
                               ))}
                             </div>
@@ -523,7 +540,7 @@ export default function CheckoutPage() {
                               <Button
                                 onClick={handleVerifyOtp}
                                 disabled={
-                                  otpValues.join("").length !== 4 ||
+                                  otpValues.join("").length !== 6 ||
                                   otpStep === "verifying"
                                 }
                                 className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold h-10"
