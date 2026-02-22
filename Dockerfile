@@ -91,5 +91,6 @@ ENV PORT=8080
 
 # At startup:
 # Start custom Node.js server (HTTP + WebSocket printer bridge)
-CMD ["sh", "-c", "npx prisma migrate deploy && node server.js"]
+# `prisma db push` syncs schema without migration history (safe without --accept-data-loss).
+CMD ["sh", "-c", "npx prisma db push && node server.js"]
 
