@@ -211,10 +211,31 @@ async function runSetupWizard() {
     return cfg;
 }
 
-// ── Debug flag (set false for silent production build) ───────────────────────
-const DEBUG = true;
 const os = require("os");
-function dbg(...args) { if (DEBUG) console.log("[DBG]", ...args); }
+
+// ── Receipt formatting helpers ───────────────────────────────────────────────
+function formatReceiptDate(dateStr) {
+    return new Date(dateStr).toLocaleString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+        timeZone: "Asia/Kolkata",
+    });
+}
+
+function formatReceiptPhone(phone) {
+    if (!phone) return "";
+    const cleaned = phone.replace(/\D/g, "");
+    if (cleaned.length === 10) return `+91 ${cleaned.slice(0, 5)} ${cleaned.slice(5)}`;
+    if (cleaned.length === 12 && cleaned.startsWith("91")) {
+        const d = cleaned.slice(2);
+        return `+91 ${d.slice(0, 5)} ${d.slice(5)}`;
+    }
+    return phone;
+}
 
 // ── Raw bytes → Windows print spooler via Winspool.drv RAW API ───────────────
 // Uses Win32 OpenPrinter/WritePrinter P/Invoke — the correct way to send
@@ -228,7 +249,6 @@ async function printRawToWindowsPrinter(printerName, buffer) {
     const psFile = path.join(tmpDir, `shivanya_${stamp}.ps1`);
 
     fs.writeFileSync(prnFile, buffer);
-    dbg(`ESC/POS ${buffer.length} bytes → ${prnFile}`);
 
     const safeName = printerName.replace(/'/g, "''");
     const psScript = `
@@ -306,23 +326,18 @@ if ($ok -and $written -eq $bytes.Length) {
 `;
 
     fs.writeFileSync(psFile, psScript, "utf8");
-    dbg(`PS Winspool script: ${psFile}`);
 
     try {
         const out = execSync(
             `powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "${psFile}"`,
             { timeout: 20000 }
         ).toString();
-        dbg(`PS output: ${out.trim()}`);
-
         if (!out.includes("PRINT_OK")) {
             throw new Error(`Print job sent but no confirmation: ${out.trim()}`);
         }
     } catch (e) {
         const stderr = e.stderr ? e.stderr.toString().trim() : "";
         const stdout = e.stdout ? e.stdout.toString().trim() : "";
-        dbg(`PS stderr: ${stderr}`);
-        dbg(`PS stdout: ${stdout}`);
         throw new Error(stderr || stdout || e.message);
     } finally {
         // Cleanup temp files
@@ -360,8 +375,6 @@ async function testPrinter(iface) {
         if (isPrinterName) {
             const name = iface.slice("printer:".length);
             ok = listWindowsPrinters().some((p) => p.name === name);
-            dbg(`Printer "${name}" in wmic list: ${ok}`);
-            dbg(`All wmic printers: ${JSON.stringify(listWindowsPrinters())}`);
         } else {
             // Direct USB device path (legacy) — treat as available
             ok = true;
@@ -391,64 +404,79 @@ async function testPrinter(iface) {
     return ok;
 }
 
-async function printReceipt(order, iface) {
-    dbg(`printReceipt called  iface="${iface}"`);
-    dbg(`Order: #${order.orderIdString}  items=${order.items?.length}  total=${order.totalAmount}`);
-
+async function printReceipt(order, iface, profile) {
     const printer = createPrinter(iface);
     try {
+        // ── Header ──────────────────────────────────────────────────────────
         printer.alignCenter();
         printer.bold(true);
         printer.setTextSize(1, 1);
-        printer.println("SHIVANYA RESTAURANT");
+        printer.println((profile?.name || "SHIVANYA RESTAURANT").toUpperCase());
         printer.bold(false);
         printer.setTextNormal();
-        printer.println("www.shivanyarestaurant.in/");
+        if (profile?.gstNumber) printer.println(`GSTIN: ${profile.gstNumber}`);
+        if (profile?.address)   printer.println(profile.address);
+        if (profile?.contact)   printer.println(`Tel: ${formatReceiptPhone(profile.contact)}`);
         printer.drawLine();
 
+        // ── Order details ────────────────────────────────────────────────────
         printer.alignLeft();
-        const orderId = order.orderIdString.slice(-8).toUpperCase();
-        printer.println(`Order  : #${orderId}`);
-        printer.println(`Date   : ${new Date(order.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}`);
+        const orderId = order.orderIdString.slice(-6).toUpperCase();
+        printer.println(`Order # : ${orderId}`);
+        printer.println(`Date    : ${formatReceiptDate(order.createdAt)}`);
 
-        const typeMap = { DINE_IN: "Dine In", TAKEAWAY: "Takeaway", DELIVERY: "Delivery" };
-        printer.println(`Type   : ${typeMap[order.type] || order.type}`);
-        if (order.tableNumber) printer.println(`Table  : ${order.tableNumber}`);
-        if (order.address) printer.println(`Addr   : ${order.address}`);
-        if (order.pickupTime) printer.println(`Pickup : ${order.pickupTime}`);
-        printer.println(`Name   : ${order.customerName}`);
-        printer.println(`Phone  : ${order.customerMobile}`);
+        const typeMap = { DINE_IN: "Dine-In", TAKEAWAY: "Takeaway", DELIVERY: "Delivery" };
+        printer.println(`Type    : ${typeMap[order.type] || order.type}`);
+        if (order.tableNumber) printer.println(`Table   : ${order.tableNumber}`);
+        printer.println(`Customer: ${order.customerName}`);
+        printer.println(`Phone   : ${formatReceiptPhone(order.customerMobile)}`);
+
+        if (order.type === "DELIVERY" && order.address) {
+            printer.drawLine();
+            printer.bold(true); printer.println("DELIVERY ADDRESS:"); printer.bold(false);
+            printer.println(order.address);
+        }
+        if (order.pickupTime) printer.println(`Pickup  : ${order.pickupTime}`);
         printer.drawLine();
 
-        printer.bold(true); printer.println("ITEMS:"); printer.bold(false);
+        // ── Items table ──────────────────────────────────────────────────────
+        printer.bold(true);
+        printer.tableCustom([
+            { text: "ITEM",  align: "LEFT",   width: 0.55 },
+            { text: "QTY",   align: "CENTER", width: 0.15 },
+            { text: "AMT",   align: "RIGHT",  width: 0.30 },
+        ]);
+        printer.bold(false);
+        printer.drawLine();
         for (const item of order.items) {
             printer.tableCustom([
-                { text: `${item.name} x${item.quantity}`, align: "LEFT", width: 0.72 },
-                { text: `Rs.${(item.price * item.quantity).toFixed(2)}`, align: "RIGHT", width: 0.28 },
+                { text: item.name,                                     align: "LEFT",   width: 0.55 },
+                { text: `x${item.quantity}`,                           align: "CENTER", width: 0.15 },
+                { text: `Rs.${(item.price * item.quantity).toFixed(2)}`, align: "RIGHT", width: 0.30 },
             ]);
         }
         printer.drawLine();
+
+        // ── Grand total ──────────────────────────────────────────────────────
         printer.bold(true);
         printer.tableCustom([
-            { text: "TOTAL", align: "LEFT", width: 0.5 },
-            { text: `Rs.${order.totalAmount.toFixed(2)}`, align: "RIGHT", width: 0.5 },
+            { text: "GRAND TOTAL",                       align: "LEFT",  width: 0.55 },
+            { text: `Rs.${order.totalAmount.toFixed(2)}`, align: "RIGHT", width: 0.45 },
         ]);
         printer.bold(false);
         printer.drawLine();
 
+        // ── Footer ───────────────────────────────────────────────────────────
         printer.alignCenter();
-        printer.println("Thank you for dining with us!");
-        printer.println("Visit again :)");
+        printer.println("Thank you! Visit Again :)");
+        printer.println("Powered by Shivanya");
         printer.newLine();
         printer.cut();
 
         if (iface.startsWith("printer:")) {
             const printerName = iface.slice("printer:".length);
-            const buf = printer.getBuffer();
-            dbg(`Sending ${buf.length} bytes to "${printerName}" via PowerShell...`);
-            await printRawToWindowsPrinter(printerName, buf);
+            await printRawToWindowsPrinter(printerName, printer.getBuffer());
         } else {
-            dbg(`Using printer.execute() for serial/COM interface`);
             await printer.execute();
         }
         console.log(` Printed Order #${orderId}`);
@@ -484,7 +512,7 @@ function connect(cfg) {
             if (payload.type === "PONG") return;
             if (payload.type === "ORDER_PRINT") {
                 console.log(`\n  Print job: Order #${payload.order.orderIdString}`);
-                const result = await printReceipt(payload.order, cfg.PRINTER_INTERFACE);
+                const result = await printReceipt(payload.order, cfg.PRINTER_INTERFACE, payload.restaurantProfile || null);
                 if (ws?.readyState === WebSocket.OPEN) {
                     ws.send(JSON.stringify({
                         type: "PRINT_STATUS",

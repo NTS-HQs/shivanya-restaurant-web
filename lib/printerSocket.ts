@@ -2,6 +2,12 @@ import WebSocket from "ws";
 
 export type PrintPayload = {
   type: "ORDER_PRINT";
+  restaurantProfile?: {
+    name: string;
+    gstNumber?: string | null;
+    address?: string | null;
+    contact?: string | null;
+  } | null;
   order: {
     id: string;
     orderIdString: string;

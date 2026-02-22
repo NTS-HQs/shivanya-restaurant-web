@@ -93,6 +93,14 @@ export async function placeOrder(input: PlaceOrderInput) {
   /* ── Auto Print ── */
   sendToPrinter({
     type: "ORDER_PRINT",
+    restaurantProfile: profile
+      ? {
+          name: profile.name,
+          gstNumber: profile.gstNumber,
+          address: profile.address,
+          contact: profile.contact,
+        }
+      : null,
     order: {
       id: order.id,
       orderIdString: order.orderIdString,

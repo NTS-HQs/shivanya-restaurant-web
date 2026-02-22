@@ -5,6 +5,7 @@ import {
   PrintPayload,
 } from "@/lib/printerSocket";
 import { requireAdmin } from "@/lib/authGuard";
+import { prisma } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,8 +23,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const profile = await prisma.restaurantProfile.findFirst();
+
     const payload: PrintPayload = {
       type: "ORDER_PRINT",
+      restaurantProfile: profile
+        ? {
+            name: profile.name,
+            gstNumber: profile.gstNumber,
+            address: profile.address,
+            contact: profile.contact,
+          }
+        : null,
       order,
     };
 
