@@ -1,15 +1,27 @@
 {
   "name": "shivanya-printer-bridge",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Local printer bridge for Shivanya Restaurant — runs on restaurant PC",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "node --watch index.js"
+    "dev": "node --watch index.js",
+    "build": "pkg index.js --target node18-win-x64 --output dist/ShivanyaPrinterBridge.exe"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
     "node-thermal-printer": "^4.4.1",
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@yao-pkg/pkg": "^5.12.0"
+  },
+  "pkg": {
+    "assets": [
+      "node_modules/node-thermal-printer/**/*"
+    ],
+    "scripts": [
+      "node_modules/**/*.js"
+    ]
   }
 }
