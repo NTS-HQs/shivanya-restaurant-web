@@ -46,7 +46,6 @@ export default function CheckoutPage() {
   const [shopSettings, setShopSettings] = useState<{
     open: string;
     close: string;
-    // close removed (duplicate)
     paymentQrCode?: string;
     upiId?: string;
   } | null>(null);
@@ -79,12 +78,12 @@ export default function CheckoutPage() {
 
   const [orderType, setOrderType] = useState<OrderType | null>(null);
 
-  // Sync state with store on mount
-  useState(() => {
+  // Sync order type from cart store on mount
+  useEffect(() => {
     if (storeOrderType) {
       setOrderType(storeOrderType.toUpperCase() as OrderType);
     }
-  });
+  }, [storeOrderType]);
   const [customerName, setCustomerName] = useState("");
   const [customerMobile, setCustomerMobile] = useState("");
   const [tableNumber, setTableNumber] = useState("");
@@ -158,7 +157,7 @@ export default function CheckoutPage() {
 
   const handleVerifyOtp = async () => {
     const code = otpValues.join("");
-    if (code.length !== 4) return;
+    if (code.length !== 6) return;
     setOtpStep("verifying");
     setOtpError("");
     try {
@@ -184,7 +183,7 @@ export default function CheckoutPage() {
   const { isAuthenticated, user, checkTokenValidity, setAuth } = useAuthStore();
 
   const finalName = isAuthenticated
-    ? user?.name?.replace(/^User \\d{4}$/, "User") || ""
+    ? user?.name?.replace(/^User \d{4}$/, "User") || ""
     : customerName;
   const finalPhone = isAuthenticated ? user?.phone || "" : customerMobile;
 
@@ -215,15 +214,10 @@ export default function CheckoutPage() {
   }, [items]); // Regenerate if items change (amount changes)
 
   // Ultra-compatible Personal UPI URI
-  // Minimal parameters: pa (ID), pn (Name), cu (Currency)
   const upiId = shopSettings?.upiId?.trim() || "";
   const upiUri = upiId
-    ? `upi://pay?pa=${upiId}&pn=${encodeURIComponent("Shivanya")}&cu=INR`
+    ? `upi://pay?pa=${upiId}&pn=${encodeURIComponent("Shivanya")}&am=${getTotalAmount().toFixed(2)}&cu=INR`
     : "";
-
-  useEffect(() => {
-    if (upiUri) console.log("Generated UPI URI:", upiUri);
-  }, [upiUri]);
 
   const handleConfirmPayment = async () => {
     if (!isAuthenticated || !checkTokenValidity() || !user) {
@@ -451,7 +445,7 @@ export default function CheckoutPage() {
                     placeholder="Your Name"
                     value={
                       isAuthenticated
-                        ? user?.name?.replace(/^User \\d{4}$/, "User") || ""
+                        ? user?.name?.replace(/^User \d{4}$/, "User") || ""
                         : customerName
                     }
                     onChange={(e) => setCustomerName(e.target.value)}

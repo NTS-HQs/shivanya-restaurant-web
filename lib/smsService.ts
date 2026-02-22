@@ -63,6 +63,9 @@ export const send2FactorOTP = async (
 };
 
 export const verify2FactorOTP = async (sessionId: string, otp: string) => {
+  if (!TWOFACTOR_API_KEY) {
+    return { success: false, error: "SMS service not configured" };
+  }
   try {
     const apiUrl = `${TWOFACTOR_BASE_URL}/${TWOFACTOR_API_KEY}/SMS/VERIFY/${sessionId}/${otp}`;
 

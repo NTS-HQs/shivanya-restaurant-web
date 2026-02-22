@@ -31,7 +31,7 @@ export async function placeOrder(input: PlaceOrderInput) {
 
   const profile = await prisma.restaurantProfile.findFirst();
   const initialStatus = profile?.autoAccept
-    ? OrderStatus.DELIVERED
+    ? OrderStatus.ACCEPTED
     : OrderStatus.PENDING;
 
   // Extract base menu item IDs
