@@ -115,6 +115,22 @@ export async function createCategory(name: string) {
   return category;
 }
 
+export async function deleteCategory(categoryId: string) {
+  await requireAdmin();
+  // Block deletion if items still use this category
+  const itemCount = await prisma.menuItem.count({ where: { categoryId } });
+  if (itemCount > 0) {
+    throw new Error(
+      `Cannot delete: ${itemCount} menu item(s) are still in this category. Delete or move them first.`,
+    );
+  }
+  await prisma.category.delete({ where: { id: categoryId } });
+  revalidatePath("/menu");
+  revalidatePath("/admin/menu");
+  revalidatePath("/admin/pos");
+  return { success: true };
+}
+
 export async function getCategories() {
   const categories = await prisma.category.findMany({
     orderBy: { sortOrder: "asc" },

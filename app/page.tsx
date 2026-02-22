@@ -216,7 +216,7 @@ export default async function HomePage() {
               </BentoCard>
             </Link>
 
-            <Link href="/eventspage/events" className="flex-1 block group">
+            <Link href="/eventspage" className="flex-1 block group">
               <BentoCard
                 title="Events"
                 icon={

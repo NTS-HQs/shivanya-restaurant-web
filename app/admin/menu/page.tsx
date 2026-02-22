@@ -13,6 +13,7 @@ import {
   updateMenuItem,
   deleteMenuItem,
   createCategory,
+  deleteCategory,
   getCategories,
   Variant,
 } from "@/lib/actions/seller";
@@ -72,10 +73,10 @@ export default function MenuManagementPage() {
 
   const handleAddItem = () => {
     if (!newItem.name || !newItem.categoryId) return;
-    
+
     // Validate variants - at least one with name and price
     const validVariants = newItem.variants.filter(
-      (v) => v.name.trim() && v.price.trim()
+      (v) => v.name.trim() && v.price.trim(),
     );
     if (validVariants.length === 0) return;
 
@@ -105,7 +106,9 @@ export default function MenuManagementPage() {
   };
 
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
-  const [editingVariants, setEditingVariants] = useState<{ name: string; price: string }[]>([]);
+  const [editingVariants, setEditingVariants] = useState<
+    { name: string; price: string }[]
+  >([]);
 
   const startEditing = (item: MenuItem) => {
     setEditingItem(item);
@@ -114,7 +117,7 @@ export default function MenuManagementPage() {
     setEditingVariants(
       variants.length > 0
         ? variants.map((v) => ({ name: v.name, price: v.price.toString() }))
-        : [{ name: "", price: "" }]
+        : [{ name: "", price: "" }],
     );
   };
 
@@ -123,7 +126,7 @@ export default function MenuManagementPage() {
 
     // Validate variants - at least one with name and price
     const validVariants = editingVariants.filter(
-      (v) => v.name.trim() && v.price.trim()
+      (v) => v.name.trim() && v.price.trim(),
     );
     if (validVariants.length === 0) return;
 
@@ -165,6 +168,26 @@ export default function MenuManagementPage() {
     });
   };
 
+  const handleDeleteCategory = (categoryId: string, categoryName: string) => {
+    const itemCount = items.filter((i) => i.categoryId === categoryId).length;
+    if (itemCount > 0) {
+      alert(
+        `Cannot delete "${categoryName}" — it has ${itemCount} item(s). Delete or move them first.`,
+      );
+      return;
+    }
+    if (!confirm(`Delete category "${categoryName}"? This cannot be undone.`))
+      return;
+    startTransition(async () => {
+      try {
+        await deleteCategory(categoryId);
+        await fetchData();
+      } catch (e: unknown) {
+        alert((e as Error).message);
+      }
+    });
+  };
+
   const addVariant = (isNewItem: boolean) => {
     if (isNewItem) {
       setNewItem({
@@ -191,7 +214,7 @@ export default function MenuManagementPage() {
     index: number,
     field: "name" | "price",
     value: string,
-    isNewItem: boolean
+    isNewItem: boolean,
   ) => {
     if (isNewItem) {
       const updated = [...newItem.variants];
@@ -217,7 +240,7 @@ export default function MenuManagementPage() {
           <Button variant="outline" onClick={() => setShowAddCategory(true)}>
             <Plus className="w-4 h-4 mr-1" /> Category
           </Button>
-          <Button 
+          <Button
             onClick={() => {
               if (categories.length === 0) {
                 setShowAddCategory(true);
@@ -226,7 +249,8 @@ export default function MenuManagementPage() {
               }
             }}
           >
-            <Plus className="w-4 h-4 mr-1" /> {categories.length === 0 ? "Create Category First" : "Add Item"}
+            <Plus className="w-4 h-4 mr-1" />{" "}
+            {categories.length === 0 ? "Create Category First" : "Add Item"}
           </Button>
         </div>
       </div>
@@ -369,7 +393,7 @@ export default function MenuManagementPage() {
                     if (!newCategoryName.trim()) return;
                     startTransition(async () => {
                       const newCat = await createCategory(
-                        newCategoryName.trim()
+                        newCategoryName.trim(),
                       );
                       await fetchData();
                       setNewItem({ ...newItem, categoryId: newCat.id });
@@ -523,7 +547,10 @@ export default function MenuManagementPage() {
                       setShowInlineCategoryAdd(true);
                     } else {
                       setShowInlineCategoryAdd(false);
-                      setEditingItem({ ...editingItem, categoryId: e.target.value });
+                      setEditingItem({
+                        ...editingItem,
+                        categoryId: e.target.value,
+                      });
                     }
                   }}
                 >
@@ -551,10 +578,13 @@ export default function MenuManagementPage() {
                       if (!newCategoryName.trim()) return;
                       startTransition(async () => {
                         const newCat = await createCategory(
-                          newCategoryName.trim()
+                          newCategoryName.trim(),
                         );
                         await fetchData();
-                        setEditingItem({ ...editingItem, categoryId: newCat.id });
+                        setEditingItem({
+                          ...editingItem,
+                          categoryId: newCat.id,
+                        });
                         setNewCategoryName("");
                         setShowInlineCategoryAdd(false);
                       });
@@ -654,15 +684,33 @@ export default function MenuManagementPage() {
 
         {categories.map((category) => {
           const categoryItems = items.filter(
-            (i) => i.categoryId === category.id
+            (i) => i.categoryId === category.id,
           );
-          if (categoryItems.length === 0) return null;
 
           return (
             <div key={category.id}>
-              <h2 className="text-lg font-bold mb-3 text-orange-600">
-                {category.name}
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-bold text-orange-600">
+                  {category.name}
+                  {categoryItems.length === 0 && (
+                    <span className="ml-2 text-sm font-normal text-slate-400">
+                      (empty)
+                    </span>
+                  )}
+                </h2>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    handleDeleteCategory(category.id, category.name)
+                  }
+                  disabled={isPending}
+                  className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 px-2"
+                  title={`Delete ${category.name}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
               <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                 {categoryItems.map((item) => (
                   <Card

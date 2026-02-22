@@ -406,84 +406,200 @@ async function testPrinter(iface) {
 
 async function printReceipt(order, iface, profile) {
     const printer = createPrinter(iface);
+
+    // ====== CONFIG ======
+    const LINE_WIDTH = 48; // 80mm printer
+    const NAME_WIDTH = 26;
+    const QTY_WIDTH = 6;
+    const AMT_WIDTH = 16;
+
+    const repeat = (char, count) => char.repeat(count);
+
+    const line = () => printer.println(repeat("-", LINE_WIDTH));
+
+    const formatCurrency = (amount) =>
+        `Rs.${Number(amount || 0).toLocaleString("en-IN", {
+            maximumFractionDigits: 0
+        })}`;
+
+    const padRight = (text, width) =>
+        text.length >= width
+            ? text.slice(0, width)
+            : text + " ".repeat(width - text.length);
+
+    const padLeft = (text, width) =>
+        text.length >= width
+            ? text.slice(0, width)
+            : " ".repeat(width - text.length) + text;
+
     try {
-        // ── Header ──────────────────────────────────────────────────────────
+        // =========================================================
+        // HEADER
+        // =========================================================
         printer.alignCenter();
         printer.bold(true);
-        printer.setTextSize(1, 1);
-        printer.println((profile?.name || "SHIVANYA RESTAURANT").toUpperCase());
+        printer.println(profile?.name?.toUpperCase() || "SHIVANYA RESTAURANT");
         printer.bold(false);
-        printer.setTextNormal();
-        if (profile?.gstNumber) printer.println(`GSTIN: ${profile.gstNumber}`);
-        if (profile?.address)   printer.println(profile.address);
-        if (profile?.contact)   printer.println(`Tel: ${formatReceiptPhone(profile.contact)}`);
-        printer.drawLine();
 
-        // ── Order details ────────────────────────────────────────────────────
+        if (profile?.gstNumber)
+            printer.println(`GSTIN: ${profile.gstNumber}`);
+
+        if (profile?.address)
+            printer.println(profile.address);
+
+        if (profile?.contact)
+            printer.println(`Tel: ${formatReceiptPhone(profile.contact)}`);
+
+        line();
+
+        // =========================================================
+        // ORDER DETAILS
+        // =========================================================
         printer.alignLeft();
-        const orderId = order.orderIdString.slice(-6).toUpperCase();
-        printer.println(`Order # : ${orderId}`);
-        printer.println(`Date    : ${formatReceiptDate(order.createdAt)}`);
 
-        const typeMap = { DINE_IN: "Dine-In", TAKEAWAY: "Takeaway", DELIVERY: "Delivery" };
-        printer.println(`Type    : ${typeMap[order.type] || order.type}`);
-        if (order.tableNumber) printer.println(`Table   : ${order.tableNumber}`);
-        printer.println(`Customer: ${order.customerName}`);
-        printer.println(`Phone   : ${formatReceiptPhone(order.customerMobile)}`);
+        const orderId = order?.orderIdString
+            ? order.orderIdString.slice(-6).toUpperCase()
+            : "------";
 
-        if (order.type === "DELIVERY" && order.address) {
-            printer.drawLine();
-            printer.bold(true); printer.println("DELIVERY ADDRESS:"); printer.bold(false);
+        printer.println(`Customer : ${order?.customerName || "-"}`);
+        printer.println(`Phone    : ${formatReceiptPhone(order?.customerMobile || "")}`);
+        printer.println(`Order #  : ${orderId}`);
+        printer.println(`Date     : ${formatReceiptDate(order?.createdAt)}`);
+
+        const typeMap = {
+            DINE_IN: "Dine-In",
+            TAKEAWAY: "Takeaway",
+            DELIVERY: "Delivery"
+        };
+
+        printer.println(`Type     : ${typeMap[order?.type] || order?.type || "-"}`);
+
+        if (order?.tableNumber)
+            printer.println(`Table    : ${order.tableNumber}`);
+
+        if (order?.pickupTime)
+            printer.println(`Pickup   : ${order.pickupTime}`);
+
+        if (order?.type === "DELIVERY" && order?.address) {
+            line();
+            printer.bold(true);
+            printer.println("DELIVERY ADDRESS");
+            printer.bold(false);
             printer.println(order.address);
         }
-        if (order.pickupTime) printer.println(`Pickup  : ${order.pickupTime}`);
-        printer.drawLine();
 
-        // ── Items table ──────────────────────────────────────────────────────
+        line();
+
+        // =========================================================
+        // ITEMS HEADER
+        // =========================================================
         printer.bold(true);
-        printer.tableCustom([
-            { text: "ITEM",  align: "LEFT",   width: 0.55 },
-            { text: "QTY",   align: "CENTER", width: 0.15 },
-            { text: "AMT",   align: "RIGHT",  width: 0.30 },
-        ]);
+        printer.println(
+            padRight("ITEM", NAME_WIDTH) +
+            padLeft("QTY", QTY_WIDTH) +
+            padLeft("AMT", AMT_WIDTH)
+        );
         printer.bold(false);
-        printer.drawLine();
-        for (const item of order.items) {
-            printer.tableCustom([
-                { text: item.name,                                     align: "LEFT",   width: 0.55 },
-                { text: `x${item.quantity}`,                           align: "CENTER", width: 0.15 },
-                { text: `Rs.${(item.price * item.quantity).toFixed(2)}`, align: "RIGHT", width: 0.30 },
-            ]);
+
+        line();
+
+        // =========================================================
+        // ITEMS LIST
+        // =========================================================
+        if (!order?.items || order.items.length === 0) {
+            printer.println("No items found");
+        } else {
+            for (const item of order.items) {
+                const name = item?.name || "Item";
+                const qty = String(item?.quantity || 0);
+                const amount = formatCurrency(
+                    (item?.price || 0) * (item?.quantity || 0)
+                );
+
+                // Handle long names (wrap properly)
+                if (name.length > NAME_WIDTH) {
+                    printer.println(name.slice(0, NAME_WIDTH));
+                    printer.println(
+                        padRight("", NAME_WIDTH) +
+                        padLeft(qty, QTY_WIDTH) +
+                        padLeft(amount, AMT_WIDTH)
+                    );
+                } else {
+                    printer.println(
+                        padRight(name, NAME_WIDTH) +
+                        padLeft(qty, QTY_WIDTH) +
+                        padLeft(amount, AMT_WIDTH)
+                    );
+                }
+            }
         }
-        printer.drawLine();
 
-        // ── Grand total ──────────────────────────────────────────────────────
+        line();
+
+        // =========================================================
+        // TOTAL SECTION
+        // =========================================================
+        if (order?.subTotal) {
+            printer.println(
+                padRight("SUBTOTAL", NAME_WIDTH + QTY_WIDTH) +
+                padLeft(formatCurrency(order.subTotal), AMT_WIDTH)
+            );
+        }
+
+        if (order?.taxAmount) {
+            printer.println(
+                padRight("GST", NAME_WIDTH + QTY_WIDTH) +
+                padLeft(formatCurrency(order.taxAmount), AMT_WIDTH)
+            );
+        }
+
         printer.bold(true);
-        printer.tableCustom([
-            { text: "GRAND TOTAL",                       align: "LEFT",  width: 0.55 },
-            { text: `Rs.${order.totalAmount.toFixed(2)}`, align: "RIGHT", width: 0.45 },
-        ]);
+        printer.println(
+            padRight("TOTAL", NAME_WIDTH + QTY_WIDTH) +
+            padLeft(formatCurrency(order?.totalAmount), AMT_WIDTH)
+        );
         printer.bold(false);
-        printer.drawLine();
 
-        // ── Footer ───────────────────────────────────────────────────────────
+        line();
+
+        // =========================================================
+        // PAYMENT INFO
+        // =========================================================
+        if (order?.paymentMethod) {
+            printer.println(`Payment  : ${order.paymentMethod}`);
+            line();
+        }
+
+        // =========================================================
+        // FOOTER
+        // =========================================================
         printer.alignCenter();
-        printer.println("Thank you! Visit Again :)");
-        printer.println("Powered by Shivanya");
+        printer.println("Thank you for dining with us!");
+        printer.println("Visit Again");
+        printer.println("-- Powered by Shivanya POS --");
+
         printer.newLine();
         printer.cut();
 
-        if (iface.startsWith("printer:")) {
+        // =========================================================
+        // EXECUTE PRINT
+        // =========================================================
+        if (iface && iface.startsWith("printer:")) {
             const printerName = iface.slice("printer:".length);
-            await printRawToWindowsPrinter(printerName, printer.getBuffer());
+            await printRawToWindowsPrinter(
+                printerName,
+                printer.getBuffer()
+            );
         } else {
             await printer.execute();
         }
-        console.log(` Printed Order #${orderId}`);
+
+        console.log(`Printed Order #${orderId}`);
         return { success: true };
+
     } catch (err) {
-        const msg = (err && err.message) ? err.message : String(err);
-        console.error(` Print failed for #${order.orderIdString}:`, msg);
+        const msg = err?.stack || err?.message || String(err);
+        console.error(`Print failed for #${order?.orderIdString}`, msg);
         return { success: false, error: msg };
     }
 }
