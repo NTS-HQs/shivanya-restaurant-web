@@ -538,10 +538,7 @@ export default function CheckoutPage() {
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleSendOtp}
-                                disabled={
-                                  otpStep === "sending" ||
-                                  otpStep === "verifying"
-                                }
+                                disabled={otpStep === "verifying"}
                                 className="text-xs text-slate-500 rounded-xl h-10 px-3"
                               >
                                 Resend
