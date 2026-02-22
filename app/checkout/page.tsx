@@ -322,7 +322,7 @@ export default function CheckoutPage() {
             Your Tray is Empty
           </h1>
           <p className="text-slate-400 font-medium mb-8">
-            Looks like you haven't made your choice yet.
+            Looks like you haven&apos;t made your choice yet.
           </p>
           <Link href="/menu">
             <Button className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-6 rounded-2xl font-bold shadow-lg shadow-orange-200">

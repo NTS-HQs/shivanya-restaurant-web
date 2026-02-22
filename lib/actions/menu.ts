@@ -24,8 +24,16 @@ export async function getRestaurantProfile() {
   if (profile && profile.openTime && profile.closeTime) {
     // Simple time comparison "HH:mm"
     // Use IST (Asia/Kolkata, UTC+5:30) regardless of server timezone
-    const istString = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hour12: false });
-    const currentTime = istString.replace(":", ":").slice(0, 5).padStart(5, "0");
+    const istString = new Date().toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const currentTime = istString
+      .replace(":", ":")
+      .slice(0, 5)
+      .padStart(5, "0");
 
     const isOpenNow =
       currentTime >= profile.openTime && currentTime <= profile.closeTime;
