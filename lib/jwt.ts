@@ -1,11 +1,14 @@
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error("JWT_SECRET environment variable is required");
+function getSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error("JWT_SECRET environment variable is required");
+  return secret;
+}
 
 export const signToken = (payload: object, expiresIn: string | number) => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return jwt.sign(payload, JWT_SECRET!, {
+  return jwt.sign(payload, getSecret(), {
     expiresIn: expiresIn as any,
     algorithm: "HS256",
   });
@@ -13,7 +16,7 @@ export const signToken = (payload: object, expiresIn: string | number) => {
 
 export const verifyToken = (token: string) => {
   try {
-    return jwt.verify(token, JWT_SECRET!, { algorithms: ["HS256"] });
+    return jwt.verify(token, getSecret(), { algorithms: ["HS256"] });
   } catch {
     return null;
   }
