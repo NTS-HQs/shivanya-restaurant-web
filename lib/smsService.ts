@@ -1,14 +1,21 @@
 import axios from "axios";
 
 // 2Factor API Configuration
-const TWOFACTOR_API_KEY =
-  process.env.TWOFACTOR_API_KEY || "68289a55-4d40-11f0-a562-0200cd936042";
+const TWOFACTOR_API_KEY = process.env.TWOFACTOR_API_KEY;
+if (!TWOFACTOR_API_KEY) {
+  console.warn(
+    "[smsService] TWOFACTOR_API_KEY not set — SMS sending will fail",
+  );
+}
 const TWOFACTOR_BASE_URL = "https://2factor.in/API/V1";
 
 export const send2FactorOTP = async (
   phoneNumber: string,
-  otp: string | null = null
+  otp: string | null = null,
 ) => {
+  if (!TWOFACTOR_API_KEY) {
+    return { success: false, error: "SMS service not configured" };
+  }
   try {
     const cleanPhoneNumber = phoneNumber
       .replace(/^\+91/, "")
@@ -41,15 +48,16 @@ export const send2FactorOTP = async (
       };
     } else {
       throw new Error(
-        `2Factor API Error: ${response.data?.Details || "Unknown error"}`
+        `2Factor API Error: ${response.data?.Details || "Unknown error"}`,
       );
     }
-  } catch (error: any) {
-    console.error("2Factor SMS Error:", error.message || error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("2Factor SMS Error:", msg);
     return {
       success: false,
       error: "Failed to send SMS",
-      details: error.message,
+      details: msg,
     };
   }
 };
@@ -78,12 +86,13 @@ export const verify2FactorOTP = async (sessionId: string, otp: string) => {
         details: response.data?.Details || "OTP verification failed",
       };
     }
-  } catch (error: any) {
-    console.error("2Factor OTP Verification Error:", error.message || error);
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error("2Factor OTP Verification Error:", msg);
     return {
       success: false,
       error: "Failed to verify OTP",
-      details: error.message,
+      details: msg,
     };
   }
 };

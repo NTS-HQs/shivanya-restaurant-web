@@ -19,6 +19,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 
+import { BannerSlider } from "@/components/ui/banner-slider";
 import { HeaderAuth } from "@/components/HeaderAuth";
 
 export default async function HomePage() {
@@ -76,59 +77,55 @@ export default async function HomePage() {
         {/* horizontally scrolling line */}
         <div className="w-full overflow-hidden bg-gray-100 py-2">
           <div className="animate-scroll whitespace-nowrap flex gap-10">
-            <span className="text-sm font-medium text-gray-800">
-              🔥 50% OFF on all Electronics
-            </span>
-            <span className="text-sm font-medium text-gray-800">
-              🚚 Free Shipping on orders above $49
-            </span>
-            <span className="text-sm font-medium text-gray-800">
-              💳 Extra 10% OFF with Credit Cards
-            </span>
-            <span className="text-sm font-medium text-gray-800">
-              🎁 Buy 1 Get 1 Free on Select Products
-            </span>
-            <span className="text-sm font-medium text-gray-800">
-              🔥 50% OFF on all Electronics
-            </span>
-            <span className="text-sm font-medium text-gray-800">
-              🚚 Free Shipping on orders above $49
-            </span>
-            <span className="text-sm font-medium text-gray-800">
-              💳 Extra 10% OFF with Credit Cards
-            </span>
-            <span className="text-sm font-medium text-gray-800">
-              🎁 Buy 1 Get 1 Free on Select Products
-            </span>
+            {(() => {
+              const items =
+                Array.isArray(
+                  (profile as Record<string, unknown>).marqueeText,
+                ) &&
+                ((profile as Record<string, unknown>).marqueeText as string[])
+                  .length > 0
+                  ? ((profile as Record<string, unknown>)
+                      .marqueeText as string[])
+                  : [
+                      "🔥 50% OFF on all Electronics",
+                      "🚚 Free Shipping on orders above $49",
+                      "💳 Extra 10% OFF with Credit Cards",
+                      "🎁 Buy 1 Get 1 Free on Select Products",
+                    ];
+              // Duplicate for seamless loop
+              return [...items, ...items].map((text, i) => (
+                <span key={i} className="text-sm font-medium text-gray-800">
+                  {text}
+                </span>
+              ));
+            })()}
           </div>
         </div>
 
         {/* 2. Hero Section - Mobile First */}
-        <div className="relative h-[40vh] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200 group">
-          {profile.bannerImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={profile.bannerImage}
-              alt="Restaurant Banner"
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-slate-200 flex items-center justify-center">
-              <span className="text-4xl">🍕</span>
+        <div className="relative h-[40vh] rounded-[2.5rem] overflow-hidden shadow-2xl shadow-slate-200">
+          <BannerSlider
+            images={
+              Array.isArray(profile.bannerImages) &&
+              (profile.bannerImages as string[]).length > 0
+                ? (profile.bannerImages as string[])
+                : profile.bannerImage
+                  ? [profile.bannerImage]
+                  : []
+            }
+            className="h-full w-full"
+          >
+            <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-20">
+              <h1 className="text-4xl sm:text-5xl font-black mb-2 leading-tight">
+                Delicious Food, <br />
+                <span className="text-orange-400">Straight to You.</span>
+              </h1>
+              <p className="text-white/80 font-medium max-w-md">
+                Experience the authentic flavors. Fresh ingredients, made with
+                love.
+              </p>
             </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
-          <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-            <h1 className="text-4xl sm:text-5xl font-black mb-2 leading-tight">
-              Delicious Food, <br />
-              <span className="text-orange-400">Straight to You.</span>
-            </h1>
-            <p className="text-white/80 font-medium max-w-md">
-              Experience the authentic flavors. Fresh ingredients, made with
-              love.
-            </p>
-          </div>
+          </BannerSlider>
         </div>
 
         {/* 3. Service Grid - The Core */}
@@ -144,11 +141,11 @@ export default async function HomePage() {
             className="col-span-1 md:col-span-8 group block h-full relative z-10"
           >
             <div
-              className="h-full min-h-[160px] sm:min-h-[280px] rounded-[2rem] p-4 sm:p-10 overflow-hidden relative transition-all hover:scale-[1.01] flex flex-col justify-between
+              className="h-full min-h-40 sm:min-h-70 rounded-[2rem] p-4 sm:p-10 overflow-hidden relative transition-all hover:scale-[1.01] flex flex-col justify-between
                           bg-white/40 backdrop-blur-xl border border-white/50 shadow-xl shadow-slate-200/50"
             >
               {/* Glossy Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-linear-to-br from-white/60 to-transparent pointer-events-none" />
 
               <div className="relative z-10 flex flex-col h-full justify-between">
                 <div className="flex justify-between items-start">
@@ -189,7 +186,7 @@ export default async function HomePage() {
                 icon={
                   <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-slate-700" />
                 }
-                className="h-full flex flex-col justify-between p-4 sm:p-6 min-h-[74px]
+                className="h-full flex flex-col justify-between p-4 sm:p-6 min-h-18.5
                                bg-white/40 backdrop-blur-xl border border-white/50 shadow-lg shadow-slate-200/40 hover:bg-white/60 transition-colors"
                 active={false}
               >
@@ -207,7 +204,7 @@ export default async function HomePage() {
                 icon={
                   <Truck className="w-5 h-5 sm:w-6 sm:h-6 text-slate-700" />
                 }
-                className="h-full flex flex-col justify-between p-4 sm:p-6 min-h-[74px]
+                className="h-full flex flex-col justify-between p-4 sm:p-6 min-h-18.5
                                bg-white/40 backdrop-blur-xl border border-white/50 shadow-lg shadow-slate-200/40 hover:bg-white/60 transition-colors"
                 active={false}
               >
@@ -225,7 +222,7 @@ export default async function HomePage() {
                 icon={
                   <Truck className="w-5 h-5 sm:w-6 sm:h-6 text-slate-700" />
                 }
-                className="h-full flex flex-col justify-between p-4 sm:p-6 min-h-[74px]
+                className="h-full flex flex-col justify-between p-4 sm:p-6 min-h-18.5
                                bg-white/40 backdrop-blur-xl border border-white/50 shadow-lg shadow-slate-200/40 hover:bg-white/60 transition-colors"
                 active={false}
               >
@@ -304,7 +301,7 @@ export default async function HomePage() {
               <p className="text-xs text-slate-400 font-bold uppercase">
                 Location
               </p>
-              <p className="font-bold text-slate-900 line-clamp-1 max-w-[200px]">
+              <p className="font-bold text-slate-900 line-clamp-1 max-w-50">
                 {profile.address.split(",")[0]}
               </p>
             </div>
@@ -344,7 +341,7 @@ export default async function HomePage() {
           </p>
         </footer>
         <a href="https://wa.me/+919560232003">
-          <div className="flex items-center w-46 border-1 bg-white text-lg border-green-700 px-2 py-2 rounded-full fixed right-4 bottom-4 z-50 shadow-green-100 shadow-2xl">
+          <div className="flex items-center w-46 border bg-white text-lg border-green-700 px-2 py-2 rounded-full fixed right-4 bottom-4 z-50 shadow-green-100 shadow-2xl">
             <img src="wa_icon.png" className="w-12 h-12" />
             Chat with us
           </div>

@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import { verify2FactorOTP } from "@/lib/smsService";
 import { signToken } from "@/lib/jwt";
 import crypto from "crypto";
-
-const prisma = new PrismaClient();
 
 const hashToken = (token: string) =>
   crypto.createHash("sha256").update(token).digest("hex");
@@ -16,7 +14,7 @@ export async function POST(req: Request) {
     if (!phoneNumber || !otp) {
       return NextResponse.json(
         { error: "Phone number and OTP required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -32,7 +30,7 @@ export async function POST(req: Request) {
     if (!otpRecord) {
       return NextResponse.json(
         { error: "No valid OTP found or OTP expired" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -40,24 +38,15 @@ export async function POST(req: Request) {
     if (otpRecord.attempts >= 3) {
       return NextResponse.json(
         { error: "Too many failed attempts" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     let otpVerified = false;
     let verificationMethod = "local";
 
-    // Special access verification for specific phone number
-    if (
-      phoneNumber === "7426803221" &&
-      otp === "1234" &&
-      otpRecord.smsProvider === "special"
-    ) {
-      otpVerified = true;
-      verificationMethod = "special";
-    }
     // Try 2Factor verification first if session_id exists
-    else if (otpRecord.sessionId && otpRecord.smsProvider === "2factor") {
+    if (otpRecord.sessionId && otpRecord.smsProvider === "2factor") {
       const factorResult = await verify2FactorOTP(otpRecord.sessionId, otp);
 
       if (factorResult.success) {
@@ -66,10 +55,9 @@ export async function POST(req: Request) {
       }
     }
 
-    // Fall back to local hash verification if 2Factor failed or not available
-    if (!otpVerified) {
+    // Fall back to local hash verification ONLY when SMS was never sent via 2factor
+    if (!otpVerified && otpRecord.smsProvider !== "2factor") {
       const computedHash = hashToken(otp);
-
       if (otpRecord.otpHash === computedHash) {
         otpVerified = true;
         verificationMethod = "local";
@@ -117,12 +105,12 @@ export async function POST(req: Request) {
     // Generate JWT tokens
     const accessToken = signToken(
       { userId: user.id, phone: phoneNumber, name: user.name, type: "access" },
-      "15m"
+      "15m",
     );
 
     const refreshToken = signToken(
       { userId: user.id, phone: phoneNumber, type: "refresh" },
-      "7d"
+      "7d",
     );
 
     return NextResponse.json({
@@ -149,7 +137,7 @@ export async function POST(req: Request) {
     console.error("🚨 Verify OTP error:", error);
     return NextResponse.json(
       { error: "Failed to verify OTP" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

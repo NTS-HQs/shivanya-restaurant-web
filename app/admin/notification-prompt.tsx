@@ -93,7 +93,7 @@ export function NotificationPrompt() {
   if (!isVisible || !("Notification" in window)) return null;
 
   return (
-    <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-3 rounded-xl shadow-lg mb-6 flex items-center justify-between animate-in slide-in-from-top-2">
+    <div className="bg-linear-to-r from-orange-500 to-orange-600 text-white px-4 py-3 rounded-xl shadow-lg mb-6 flex items-center justify-between animate-in slide-in-from-top-2">
       <div className="flex items-center gap-3">
         <div className="bg-white/20 p-2 rounded-full">
           <Bell className="w-5 h-5" />

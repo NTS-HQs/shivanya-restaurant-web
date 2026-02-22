@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendPushNotification } from "@/lib/pushNotification";
+import { requireAdmin } from "@/lib/authGuard";
 
 export async function POST(req: NextRequest) {
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { title, body, url, userType = "admin" } = await req.json();
 

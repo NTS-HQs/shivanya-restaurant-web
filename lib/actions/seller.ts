@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { requireAdmin } from "@/lib/authGuard";
 
 export async function updateRestaurantProfile(data: {
   name?: string;
@@ -13,10 +14,13 @@ export async function updateRestaurantProfile(data: {
   closeTime?: string;
   isOpen?: boolean;
   bannerImage?: string;
+  bannerImages?: string[];
+  marqueeText?: string[];
   paymentQrCode?: string;
   upiId?: string;
   autoAccept?: boolean;
 }) {
+  await requireAdmin();
   const profile = await prisma.restaurantProfile.findFirst();
   if (!profile) throw new Error("Restaurant profile not found");
 
@@ -33,6 +37,7 @@ export async function updateRestaurantProfile(data: {
 }
 
 export async function toggleMenuItem(itemId: string, isAvailable: boolean) {
+  await requireAdmin();
   const item = await prisma.menuItem.update({
     where: { id: itemId },
     data: { isAvailable },
@@ -55,9 +60,11 @@ export async function createMenuItem(data: {
   isVeg: boolean;
   categoryId: string;
 }) {
+  await requireAdmin();
   const item = await prisma.menuItem.create({
     data: {
       ...data,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       variants: data.variants as any,
     },
   });
@@ -78,10 +85,12 @@ export async function updateMenuItem(
     categoryId?: string;
   },
 ) {
+  await requireAdmin();
   const item = await prisma.menuItem.update({
     where: { id: itemId },
     data: {
       ...data,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       variants: data.variants as any,
     },
   });
@@ -91,6 +100,7 @@ export async function updateMenuItem(
 }
 
 export async function deleteMenuItem(itemId: string) {
+  await requireAdmin();
   await prisma.menuItem.delete({ where: { id: itemId } });
   revalidatePath("/menu");
   revalidatePath("/admin/pos");
@@ -98,6 +108,7 @@ export async function deleteMenuItem(itemId: string) {
 }
 
 export async function createCategory(name: string) {
+  await requireAdmin();
   const category = await prisma.category.create({ data: { name } });
   revalidatePath("/menu");
   revalidatePath("/admin/pos");

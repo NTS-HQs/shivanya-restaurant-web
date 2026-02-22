@@ -24,6 +24,8 @@ model RestaurantProfile {
   bannerImage   String?
   paymentQrCode String?
   upiId         String?
+  bannerImages  Json?    // Array of image URLs for the banner slider
+  marqueeText   Json?    // Array of strings for the horizontal scrolling banner
   openTime      String
   closeTime     String
   isOpen        Boolean  @default(true)

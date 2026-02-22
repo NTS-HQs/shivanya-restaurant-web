@@ -8,17 +8,44 @@ import { Badge } from "@/components/ui/badge";
 import { getRestaurantProfile } from "@/lib/actions/menu";
 import { updateRestaurantProfile } from "@/lib/actions/seller";
 import { ImageUpload } from "@/components/ui/image-upload";
-import { Save, Loader2, ToggleLeft, ToggleRight } from "lucide-react";
+import {
+  Save,
+  Loader2,
+  ToggleLeft,
+  ToggleRight,
+  Images,
+  Megaphone,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
 type Profile = Awaited<ReturnType<typeof getRestaurantProfile>>;
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile>(null);
+  const [bannerImages, setBannerImages] = useState<string[]>([]);
+  const [marqueeItems, setMarqueeItems] = useState<string[]>([
+    "🔥 50% OFF on all Electronics",
+    "🚚 Free Shipping on orders above ₹499",
+    "💳 Extra 10% OFF with Credit Cards",
+    "🎁 Buy 1 Get 1 Free on Select Products",
+  ]);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    getRestaurantProfile().then(setProfile);
+    getRestaurantProfile().then((p) => {
+      setProfile(p);
+      const pExt = p as Record<string, unknown>;
+      if (pExt.bannerImages && Array.isArray(pExt.bannerImages)) {
+        setBannerImages(pExt.bannerImages as string[]);
+      } else if (p?.bannerImage) {
+        setBannerImages([p.bannerImage]);
+      }
+      if (pExt.marqueeText && Array.isArray(pExt.marqueeText)) {
+        setMarqueeItems(pExt.marqueeText as string[]);
+      }
+    });
   }, []);
 
   const handleSave = () => {
@@ -32,6 +59,8 @@ export default function SettingsPage() {
         address: profile.address,
         gstNumber: profile.gstNumber || undefined,
         bannerImage: profile.bannerImage || undefined,
+        bannerImages: bannerImages.filter(Boolean),
+        marqueeText: marqueeItems.filter(Boolean),
         autoAccept: profile.autoAccept,
         openTime: profile.openTime,
         closeTime: profile.closeTime,
@@ -161,7 +190,7 @@ export default function SettingsPage() {
 
               <div className="md:col-span-2 space-y-2">
                 <label className="text-sm font-medium text-slate-700">
-                  Restaurant Banner
+                  Restaurant Banner (Legacy / Single)
                 </label>
                 <ImageUpload
                   value={profile.bannerImage || ""}
@@ -183,6 +212,88 @@ export default function SettingsPage() {
                   placeholder="Complete street address for delivery purposes"
                 />
               </div>
+            </div>
+          </Card>
+
+          {/* Marquee Banner Card */}
+          <Card className="p-6 border border-slate-200 shadow-sm bg-white">
+            <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <Megaphone className="w-5 h-5 text-orange-500" />
+                Scrolling Banner Text
+              </h2>
+              <p className="text-xs text-slate-400">
+                Shown on the homepage ticker
+              </p>
+            </div>
+            <div className="space-y-3">
+              {marqueeItems.map((item, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-xs text-slate-400 w-5 text-right shrink-0">
+                    {i + 1}.
+                  </span>
+                  <Input
+                    value={item}
+                    onChange={(e) => {
+                      const updated = [...marqueeItems];
+                      updated[i] = e.target.value;
+                      setMarqueeItems(updated);
+                    }}
+                    placeholder={`Marquee item ${i + 1}`}
+                    className="bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMarqueeItems(
+                        marqueeItems.filter((_, idx) => idx !== i),
+                      )
+                    }
+                    className="p-1.5 text-slate-400 hover:text-red-500 rounded transition-colors shrink-0"
+                    aria-label="Remove item"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setMarqueeItems([...marqueeItems, ""])}
+                className="mt-1 flex items-center gap-1.5 text-sm text-orange-600 hover:text-orange-700 font-medium transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add item
+              </button>
+            </div>
+          </Card>
+
+          {/* Banner Slider Card */}
+          <Card className="p-6 border border-slate-200 shadow-sm bg-white">
+            <div className="flex items-center justify-between mb-6 border-b border-slate-100 pb-4">
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                <Images className="w-5 h-5 text-orange-500" />
+                Banner Slider
+              </h2>
+              <p className="text-xs text-slate-400">
+                Up to 3 slides · auto-rotates every 4s
+              </p>
+            </div>
+            <div className="space-y-5">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">
+                    Slide {i + 1}
+                  </label>
+                  <ImageUpload
+                    value={bannerImages[i] || ""}
+                    onChange={(url) => {
+                      const updated = [...bannerImages];
+                      updated[i] = url;
+                      setBannerImages(updated);
+                    }}
+                  />
+                </div>
+              ))}
             </div>
           </Card>
         </div>
@@ -274,7 +385,8 @@ export default function SettingsPage() {
                   className="bg-slate-50 border-slate-200"
                 />
                 <p className="text-xs text-slate-500">
-                  Enter your VPA to enable "Pay with UPI App" button.
+                  Enter your VPA to enable &ldquo;Pay with UPI App&rdquo;
+                  button.
                 </p>
               </div>
 

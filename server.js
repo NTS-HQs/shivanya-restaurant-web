@@ -1,6 +1,7 @@
 // server.js — Custom Next.js server with WebSocket support for printer bridge
 // This runs on Railway: HTTP + WS on the SAME port (Railway's exposed PORT)
 // Printer bridge on restaurant PC connects via: wss://yourapp.up.railway.app/printer-ws?secret=xxx
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const { createServer } = require("http");
 const { parse } = require("url");
@@ -50,7 +51,7 @@ app.prepare().then(() => {
                         msg.error || ""
                     );
                 }
-            } catch (_) { }
+            } catch { }
         });
     });
 
@@ -60,8 +61,19 @@ app.prepare().then(() => {
 
         if (pathname === "/printer-ws") {
             const secret = query.secret;
+            const expected = process.env.PRINTER_BRIDGE_SECRET;
 
-            if (!secret || secret !== process.env.PRINTER_BRIDGE_SECRET) {
+            // Timing-safe comparison to prevent secret inference via response time
+            const secretMatches =
+                expected &&
+                secret &&
+                secret.length === expected.length &&
+                require("crypto").timingSafeEqual(
+                    Buffer.from(String(secret)),
+                    Buffer.from(String(expected))
+                );
+
+            if (!secretMatches) {
                 console.warn("❌  Unauthorized printer bridge attempt rejected");
                 socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
                 socket.destroy();

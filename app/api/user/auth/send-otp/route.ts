@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/db";
 import { send2FactorOTP } from "@/lib/smsService";
 import crypto from "crypto";
 
-const prisma = new PrismaClient();
-
-const generateOTP = () => Math.floor(1000 + Math.random() * 9000).toString();
+const generateOTP = () => crypto.randomInt(100000, 999999).toString();
 const hashToken = (token: string) =>
   crypto.createHash("sha256").update(token).digest("hex");
 
@@ -17,7 +15,7 @@ export async function POST(req: Request) {
     if (!phoneNumber || phoneNumber.length < 10) {
       return NextResponse.json(
         { error: "Valid phone number required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -36,48 +34,33 @@ export async function POST(req: Request) {
       },
     });
 
-    if (recentAttempts >= 15) {
+    if (recentAttempts >= 3) {
       return NextResponse.json(
         { error: "Too many OTP requests. Try again later." },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
     // Generate OTP
-    let otp;
-    if (phoneNumber === "7426803221") {
-      otp = "1234";
-    } else {
-      otp = generateOTP();
-    }
+    const otp = generateOTP();
 
     const otpHash = hashToken(otp);
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
     // Send OTP via 2Factor API
     let smsProvider = "console";
-    let smsStatus = "sent";
     let sessionId = null;
-    let smsResult: any = { success: false };
+    const smsResult = await send2FactorOTP(phoneNumber, otp);
+    const smsStatus = smsResult.success ? "sent" : "fallback";
 
-    if (phoneNumber === "7426803221") {
-      smsProvider = "special";
-      smsStatus = "bypassed";
-      sessionId = `special_${Date.now()}`;
-      smsResult = { success: true, sessionId, phoneNumber };
+    if (smsResult.success) {
+      smsProvider = "2factor";
+      sessionId = smsResult.sessionId;
     } else {
-      smsResult = await send2FactorOTP(phoneNumber, otp);
-
-      if (smsResult.success) {
-        smsProvider = "2factor";
-        sessionId = smsResult.sessionId;
-      } else {
-        console.log(
-          `🔐 [USER-CONSOLE-OTP] FALLBACK - OTP for ${phoneNumber}: ${otp} (${
-            isSignup ? "SIGNUP" : "LOGIN"
-          })`
-        );
-      }
+      // SMS delivery failed — log without exposing the OTP itself
+      console.error(
+        `[OTP-FALLBACK] SMS failed for +91***${phoneNumber.slice(-4)}`,
+      );
     }
 
     // Store OTP attempt in database
@@ -94,17 +77,10 @@ export async function POST(req: Request) {
       },
     });
 
-    const responseMessage = smsResult.success
-      ? "OTP sent successfully via SMS"
-      : "OTP generated (check console for development)";
-
     return NextResponse.json({
       success: true,
-      message: responseMessage,
-      isSignup,
+      message: "OTP sent",
       expiresIn: 300,
-      smsProvider,
-      smsStatus: smsResult.success ? "sent" : "fallback",
     });
   } catch (error: any) {
     console.error("🚨 Send OTP error:", error);

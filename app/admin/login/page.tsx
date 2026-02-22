@@ -19,14 +19,21 @@ export default function SellerLoginPage() {
     setIsLoading(true);
     setError("");
 
-    // Simple auth check (in production, use NextAuth or similar)
-    if (email === "admin@shivanya.com" && password === "password123") {
-      localStorage.setItem("seller_auth", "true");
+    try {
+      const res = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Login failed");
+      // Cookie is set HttpOnly by the server — no localStorage needed
       router.push("/admin/dashboard");
-    } else {
-      setError("Invalid email or password");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
@@ -84,10 +91,6 @@ export default function SellerLoginPage() {
             )}
           </Button>
         </form>
-
-        <p className="text-center text-slate-500 text-sm mt-6">
-          Demo: admin@shivanya.com / password123
-        </p>
       </Card>
     </div>
   );

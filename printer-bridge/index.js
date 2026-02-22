@@ -7,6 +7,7 @@
  * Setup: see PRINTER_SETUP.md in the main project
  */
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 require("dotenv").config();
 const WebSocket = require("ws");
 const { ThermalPrinter, PrinterTypes, CharacterSet } = require("node-thermal-printer");
@@ -59,7 +60,7 @@ async function printReceipt(order) {
         printer.println("SHIVANYA RESTAURANT");
         printer.bold(false);
         printer.setTextNormal();
-        printer.println("www.shivanya.com");
+        printer.println("www.shivanyarestaurant.in/");
         printer.drawLine();
 
         // ── Order Info ──
@@ -174,7 +175,7 @@ function connect() {
         }
     });
 
-    ws.on("close", (code, reason) => {
+    ws.on("close", (code) => {
         clearInterval(pingInterval);
         pingInterval = null;
         console.log(`🔌  Disconnected (code: ${code}). Reconnecting in ${RECONNECT_DELAY_MS / 1000}s...`);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { useCartStore } from "@/lib/store/cart";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { placeOrder } from "@/lib/actions/orders";
+import { sendOTP, verifyOTP } from "@/lib/authApi";
 import {
   ArrowLeft,
   Minus,
@@ -102,7 +103,69 @@ export default function CheckoutPage() {
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"UPI" | "CASH">("UPI");
 
-  const { isAuthenticated, user, checkTokenValidity } = useAuthStore();
+  // ── Inline OTP verification ───────────────────────────────────────────────
+  type OtpStep = "idle" | "sending" | "sent" | "verifying";
+  const [otpStep, setOtpStep] = useState<OtpStep>("idle");
+  const [otpValues, setOtpValues] = useState(["", "", "", ""]);
+  const [otpError, setOtpError] = useState("");
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const handleSendOtp = async () => {
+    if (customerMobile.length !== 10) return;
+    setOtpStep("sending");
+    setOtpError("");
+    try {
+      await sendOTP(customerMobile);
+      setOtpStep("sent");
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    } catch {
+      setOtpError("Failed to send OTP. Try again.");
+      setOtpStep("idle");
+    }
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return;
+    const updated = [...otpValues];
+    updated[index] = value.slice(-1);
+    setOtpValues(updated);
+    if (value && index < 3) otpRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (e.key === "Backspace" && !otpValues[index] && index > 0)
+      otpRefs.current[index - 1]?.focus();
+  };
+
+  const handleVerifyOtp = async () => {
+    const code = otpValues.join("");
+    if (code.length !== 4) return;
+    setOtpStep("verifying");
+    setOtpError("");
+    try {
+      const res = await verifyOTP(
+        customerMobile,
+        code,
+        customerName || undefined,
+      );
+      if (res.tokens && res.user) {
+        setAuth({ user: res.user, tokens: res.tokens });
+        setOtpValues(["", "", "", ""]);
+      } else {
+        setOtpError("Verification failed. Please try again.");
+        setOtpStep("sent");
+      }
+    } catch (err: any) {
+      setOtpError(err?.response?.data?.error || "Invalid OTP.");
+      setOtpStep("sent");
+    }
+  };
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const { isAuthenticated, user, checkTokenValidity, setAuth } = useAuthStore();
 
   const finalName = isAuthenticated
     ? user?.name?.replace(/^User \\d{4}$/, "User") || ""
@@ -110,6 +173,7 @@ export default function CheckoutPage() {
   const finalPhone = isAuthenticated ? user?.phone || "" : customerMobile;
 
   const canProceed =
+    isAuthenticated &&
     finalName.trim() &&
     finalPhone.trim().length >= 10 &&
     orderType &&
@@ -187,7 +251,7 @@ export default function CheckoutPage() {
     } catch (error) {
       console.error("Order placement error:", error);
       alert(
-        "Something went wrong. Please check your connection and try again."
+        "Something went wrong. Please check your connection and try again.",
       );
     } finally {
       setIsPlacing(false);
@@ -205,7 +269,7 @@ export default function CheckoutPage() {
         >
           <div className="bg-white rounded-[3rem] p-10 shadow-2xl shadow-slate-200/50 text-center relative overflow-hidden">
             {/* Decorative Background Blob */}
-            <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-gradient-to-b from-green-50/50 to-transparent rounded-full animate-pulse z-0 pointer-events-none" />
+            <div className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%] bg-linear-to-b from-green-50/50 to-transparent rounded-full animate-pulse z-0 pointer-events-none" />
 
             <div className="relative z-10 flex flex-col items-center">
               <motion.div
@@ -392,6 +456,105 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
+              {/* ── Inline OTP Verification ── */}
+              {!isAuthenticated && (
+                <AnimatePresence>
+                  {customerMobile.length === 10 && (
+                    <motion.div
+                      key="otp-block"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-1 p-4 rounded-2xl bg-blue-50 border border-blue-100 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-bold text-slate-800">
+                              Verify Phone Number
+                            </p>
+                            <p className="text-xs text-slate-500">
+                              OTP will be sent to +91 {customerMobile}
+                            </p>
+                          </div>
+                          {otpStep === "idle" || otpStep === "sending" ? (
+                            <Button
+                              size="sm"
+                              onClick={handleSendOtp}
+                              disabled={otpStep === "sending"}
+                              className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold h-8 px-4"
+                            >
+                              {otpStep === "sending" ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                "Send OTP"
+                              )}
+                            </Button>
+                          ) : null}
+                        </div>
+
+                        {otpStep === "sent" || otpStep === "verifying" ? (
+                          <div className="space-y-3">
+                            <div className="flex gap-3 justify-center">
+                              {otpValues.map((val, i) => (
+                                <input
+                                  key={i}
+                                  ref={(el) => {
+                                    otpRefs.current[i] = el;
+                                  }}
+                                  type="text"
+                                  inputMode="numeric"
+                                  maxLength={1}
+                                  value={val}
+                                  onChange={(e) =>
+                                    handleOtpChange(i, e.target.value)
+                                  }
+                                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                                  className="w-12 h-12 text-center text-xl font-black rounded-xl bg-white border-2 border-slate-200 focus:border-orange-400 focus:outline-none transition-colors shadow-sm"
+                                />
+                              ))}
+                            </div>
+                            {otpError && (
+                              <p className="text-xs text-red-500 font-bold text-center">
+                                {otpError}
+                              </p>
+                            )}
+                            <div className="flex gap-2">
+                              <Button
+                                onClick={handleVerifyOtp}
+                                disabled={
+                                  otpValues.join("").length !== 4 ||
+                                  otpStep === "verifying"
+                                }
+                                className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-bold h-10"
+                              >
+                                {otpStep === "verifying" ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  "Verify OTP"
+                                )}
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleSendOtp}
+                                disabled={
+                                  otpStep === "sending" ||
+                                  otpStep === "verifying"
+                                }
+                                className="text-xs text-slate-500 rounded-xl h-10 px-3"
+                              >
+                                Resend
+                              </Button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              )}
+
               <AnimatePresence>
                 {orderType === "DINE_IN" && (
                   <motion.div
@@ -460,7 +623,7 @@ export default function CheckoutPage() {
                           <select
                             value={building}
                             onChange={(e) => setBuilding(e.target.value)}
-                            className="w-full pl-10 pr-4 h-12 rounded-xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 appearance-none bg-no-repeat bg-[right_1rem_center] cursor-pointer text-sm"
+                            className="w-full pl-10 pr-4 h-12 rounded-xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 appearance-none bg-no-repeat bg-position-[right_1rem_center] cursor-pointer text-sm"
                             style={{
                               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
                               backgroundSize: "1rem",
@@ -572,10 +735,10 @@ export default function CheckoutPage() {
               <Receipt className="w-5 h-5 text-orange-500" /> Order Summary
             </h2>
 
-            <div className="space-y-4 relative z-10 mb-8 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+            <div className="space-y-4 relative z-10 mb-8 max-h-100 overflow-y-auto pr-2 custom-scrollbar">
               {items.map((item) => (
                 <div key={item.id} className="flex items-center gap-4 p-2">
-                  <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl flex-shrink-0">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center text-2xl shrink-0">
                     🥗
                   </div>
 
@@ -783,7 +946,7 @@ export default function CheckoutPage() {
                           Whatsapp to confirm your order.
                         </p>
                         <a href="https://wa.me/+919560232003">
-                          <button className="cursor-pointer border-1 border-green-800  px-4 py-2 my-4 rounded-full text-green-800 font-medium hover:bg-green-800 hover:text-white shadow-md shadow-green-200">
+                          <button className="cursor-pointer border border-green-800  px-4 py-2 my-4 rounded-full text-green-800 font-medium hover:bg-green-800 hover:text-white shadow-md shadow-green-200">
                             Click here to open whatsapp
                           </button>
                         </a>

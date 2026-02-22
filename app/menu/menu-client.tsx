@@ -100,13 +100,13 @@ export function MenuClient({
     activeCategory === "all" ? allItems : filteredCategory?.items || [];
 
   const displayItems = itemsToFilter.filter((item) =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   return (
     <div className="flex h-screen bg-[#F8F9FD] font-sans text-slate-800 overflow-hidden selection:bg-orange-100">
       {/* 1. LEFT SIDEBAR - NAVIGATION */}
-      <div className="hidden lg:flex w-24 xl:w-64 bg-white flex-col border-r border-slate-100 h-full flex-shrink-0 z-30">
+      <div className="hidden lg:flex w-24 xl:w-64 bg-white flex-col border-r border-slate-100 h-full shrink-0 z-30">
         <div className="p-8 pb-4">
           <div className="flex items-center gap-2 text-2xl font-bold text-orange-600 tracking-tight">
             <div className="w-8 h-8 bg-orange-600 rounded-lg flex items-center justify-center text-white text-lg">
@@ -154,7 +154,7 @@ export function MenuClient({
               )}
 
               {/* Dark Fade Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent" />
 
               <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-10 flex justify-between items-end">
                 <div className="text-white">
@@ -292,14 +292,28 @@ export function MenuClient({
                           <div className="flex items-center justify-between">
                             <div className="text-sm text-slate-500">
                               {item.variants.length === 1 ? (
-                                <span className="font-bold text-slate-800">₹{item.variants[0].price}</span>
+                                <span className="font-bold text-slate-800">
+                                  ₹{item.variants[0].price}
+                                </span>
                               ) : (
-                                <span>₹{Math.min(...item.variants.map(v => v.price))} - ₹{Math.max(...item.variants.map(v => v.price))}</span>
+                                <span>
+                                  ₹
+                                  {Math.min(
+                                    ...item.variants.map((v) => v.price),
+                                  )}{" "}
+                                  - ₹
+                                  {Math.max(
+                                    ...item.variants.map((v) => v.price),
+                                  )}
+                                </span>
                               )}
                             </div>
                             <button
                               onClick={() => {
-                                if (item.variants && item.variants.length === 1) {
+                                if (
+                                  item.variants &&
+                                  item.variants.length === 1
+                                ) {
                                   // Single variant - add directly
                                   addItem({
                                     id: `${item.id}-${item.variants[0].name}`,
@@ -310,7 +324,9 @@ export function MenuClient({
                                 } else {
                                   // Multiple variants - show selector
                                   setSelectedItem(item);
-                                  setSelectedSize(item.variants?.[0]?.name || "");
+                                  setSelectedSize(
+                                    item.variants?.[0]?.name || "",
+                                  );
                                 }
                               }}
                               className="w-10 h-10 bg-orange-600 text-white rounded-full flex items-center justify-center hover:bg-orange-700 transition-colors shadow-md"
@@ -320,7 +336,9 @@ export function MenuClient({
                           </div>
                         ) : (
                           <span className="text-xs font-bold text-slate-300">
-                            {item.isAvailable ? "No variants available" : "Sold Out"}
+                            {item.isAvailable
+                              ? "No variants available"
+                              : "Sold Out"}
                           </span>
                         )}
                       </div>
@@ -359,7 +377,7 @@ export function MenuClient({
       </div>
 
       {/* 3. RIGHT SIDEBAR - CART / BILLS */}
-      <div className="w-[400px] bg-white border-l border-slate-100 flex-col h-full z-30 hidden 2xl:flex shadow-2xl shadow-slate-200">
+      <div className="w-100 bg-white border-l border-slate-100 flex-col h-full z-30 hidden 2xl:flex shadow-2xl shadow-slate-200">
         <div className="p-8 pb-4">
           <h2 className="text-2xl font-bold text-slate-900 mb-6">
             Current Order
@@ -374,8 +392,8 @@ export function MenuClient({
                   orderType === "dine_in"
                     ? "4px"
                     : orderType === "takeaway"
-                    ? "33.33%"
-                    : "66.66%",
+                      ? "33.33%"
+                      : "66.66%",
               }}
             />
             <button
@@ -418,7 +436,7 @@ export function MenuClient({
           {cartItems.length > 0 ? (
             cartItems.map((item) => (
               <div key={item.id} className="flex gap-4 group">
-                <div className="w-16 h-16 rounded-2xl bg-slate-50 overflow-hidden flex-shrink-0">
+                <div className="w-16 h-16 rounded-2xl bg-slate-50 overflow-hidden shrink-0">
                   {/* Placeholder image logic similar to menu items */}
                   <div className="w-full h-full flex items-center justify-center text-xl bg-orange-50 text-orange-400">
                     🍲
@@ -546,9 +564,9 @@ export function MenuClient({
                     <span className="text-2xl">×</span>
                   </button>
                 </div>
-                
+
                 <p className="text-sm text-slate-500 mb-4">Select Size</p>
-                
+
                 <div className="space-y-2 mb-6">
                   {selectedItem.variants?.map((variant) => (
                     <label
@@ -578,11 +596,11 @@ export function MenuClient({
                     </label>
                   ))}
                 </div>
-                
+
                 <button
                   onClick={() => {
                     const variant = selectedItem.variants?.find(
-                      (v) => v.name === selectedSize
+                      (v) => v.name === selectedSize,
                     );
                     if (variant) {
                       addItem({

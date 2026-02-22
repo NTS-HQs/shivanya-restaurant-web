@@ -1,14 +1,12 @@
 // public/sw.js — Shivanya Restaurant Service Worker
 // Handles web push notifications when the browser tab is closed.
 
-const CACHE_NAME = "shivanya-v1";
-
 // ── Push Notification Handler ────────────────────────────────────────────────
 self.addEventListener("push", (event) => {
     let data = {};
     try {
         data = event.data ? event.data.json() : {};
-    } catch (_) {
+    } catch {
         data = { title: "New Notification", body: event.data?.text() || "" };
     }
 

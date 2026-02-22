@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { OrderType, OrderStatus } from "@prisma/client";
 import { sendToPrinter } from "@/lib/printerSocket";
 import { sendPushNotification } from "@/lib/pushNotification";
+import { requireAdmin } from "@/lib/authGuard";
 
 type CartItem = {
   id: string;
@@ -145,6 +146,7 @@ export async function getOrderByIdString(orderIdString: string) {
 /* ---------------- SELLER ACTIONS ---------------- */
 
 export async function getPendingOrders() {
+  await requireAdmin();
   if (!process.env.DATABASE_URL) return [];
   return prisma.order.findMany({
     where: { status: OrderStatus.PENDING },
@@ -154,6 +156,7 @@ export async function getPendingOrders() {
 }
 
 export async function getAllOrders() {
+  await requireAdmin();
   return prisma.order.findMany({
     include: { items: true },
     orderBy: { createdAt: "desc" },
@@ -165,6 +168,7 @@ export async function updateOrderStatus(
   status: "ACCEPTED" | "REJECTED" | "DELIVERED",
   rejectionReason?: string,
 ) {
+  await requireAdmin();
   return prisma.order.update({
     where: { id: orderId },
     data: {
@@ -178,6 +182,7 @@ export async function updateOrderStatus(
 /* ---------------- DASHBOARD STATS ---------------- */
 
 export async function getDashboardStats() {
+  await requireAdmin();
   if (!process.env.DATABASE_URL)
     return {
       totalOrders: 0,
@@ -208,4 +213,56 @@ export async function getDashboardStats() {
     deliveredOrders,
     todaySales: todaySales._sum.totalAmount || 0,
   };
+}
+
+/* ---------------- CUSTOMER LIST ---------------- */
+
+export async function getCustomerList() {
+  await requireAdmin();
+  if (!process.env.DATABASE_URL) return [];
+
+  const orders = await prisma.order.findMany({
+    select: {
+      customerName: true,
+      customerMobile: true,
+      type: true,
+      createdAt: true,
+      totalAmount: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  type Entry = {
+    name: string;
+    phone: string;
+    types: Set<string>;
+    count: number;
+    lastOrder: Date;
+    totalSpent: number;
+  };
+
+  const map = new Map<string, Entry>();
+
+  for (const o of orders) {
+    const key = o.customerMobile;
+    if (!map.has(key)) {
+      map.set(key, {
+        name: o.customerName,
+        phone: key,
+        types: new Set(),
+        count: 0,
+        lastOrder: o.createdAt,
+        totalSpent: 0,
+      });
+    }
+    const entry = map.get(key)!;
+    entry.types.add(o.type);
+    entry.count++;
+    entry.totalSpent += o.totalAmount;
+    if (o.createdAt > entry.lastOrder) entry.lastOrder = o.createdAt;
+  }
+
+  return Array.from(map.values())
+    .map((e) => ({ ...e, types: Array.from(e.types) as string[] }))
+    .sort((a, b) => b.lastOrder.getTime() - a.lastOrder.getTime());
 }

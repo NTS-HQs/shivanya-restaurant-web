@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   ShoppingCart,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/admin/orders", label: "Orders", icon: ClipboardList },
   { href: "/admin/pos", label: "Take Order", icon: ShoppingCart },
   { href: "/admin/menu", label: "Menu", icon: UtensilsCrossed },
+  { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
@@ -31,28 +33,17 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  useEffect(() => {
-    const auth = localStorage.getItem("seller_auth");
-    if (!auth && !pathname.includes("/login")) {
-      router.push("/admin/login");
-    } else {
-      setIsAuthenticated(true);
-    }
-  }, [pathname, router]);
+  // Auth is enforced server-side by middleware.ts (verifies HttpOnly admin_token cookie).
+  // No client-side localStorage check needed.
 
-  const handleLogout = () => {
-    localStorage.removeItem("seller_auth");
+  const handleLogout = async () => {
+    await fetch("/api/admin/login", { method: "DELETE" });
     router.push("/admin/login");
   };
 
   if (pathname.includes("/login")) {
     return <>{children}</>;
-  }
-
-  if (!isAuthenticated) {
-    return null;
   }
 
   return (

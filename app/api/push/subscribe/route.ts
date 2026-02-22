@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { requireAdmin } from "@/lib/authGuard";
 
 export async function POST(req: NextRequest) {
   try {
     const { subscription, userType = "admin" } = await req.json();
+
+    // Admin subscriptions require authentication
+    if (userType === "admin") {
+      try {
+        await requireAdmin();
+      } catch {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+    }
 
     if (
       !subscription?.endpoint ||
