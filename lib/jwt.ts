@@ -15,8 +15,12 @@ export const signToken = (payload: object, expiresIn: string | number) => {
 };
 
 export const verifyToken = (token: string) => {
+  // Return null gracefully if JWT_SECRET is not configured (e.g. during next build).
+  // All protected routes treat null as unauthenticated, so this is safe.
+  const secret = process.env.JWT_SECRET;
+  if (!secret) return null;
   try {
-    return jwt.verify(token, getSecret(), { algorithms: ["HS256"] });
+    return jwt.verify(token, secret, { algorithms: ["HS256"] });
   } catch {
     return null;
   }
