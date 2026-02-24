@@ -274,7 +274,7 @@ export default async function HomePage() {
           <div className="block sm:hidden h-px w-full bg-slate-100"></div>
 
           <a
-            href={`https://www.instagram.com/`}
+            href={`https://www.instagram.com/shivanya_restaurant/`}
             className="flex items-center gap-4 group cursor-pointer"
           >
             <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center shrink-0 group-hover:bg-green-100 transition-colors">
@@ -312,15 +312,16 @@ export default async function HomePage() {
         </div>
 
         <div className="bg-white rounded-[2rem] p-6 md:p-16  shadow-sm border border-slate-100 text-center text-lg ">
-          STEP INTO THE REALM OF TASTE AND DEVOTION AT "SHIVANYA RESTAURANT."' A
-          PLACE WHERE FLAVORS TRANSCEND AND SPIRITUALITY SINGS. THE NAME
-          "SHIVANYA" PAYS HOMAGE TO THE POWERFUL FUSION OF TWO WORDS: "SHIVA."
-          THE BENEVOLENT DEITY, AND "ANYA," REPRESENTING UNIQUENESS. JUST AS
-          LORD SHIVA EMBODIES PURITY AND STRENGTH, OUT ESTABLISHMENT BRINGS YOU
-          A UNIQUE DINING EXPERIENCE. WHERE EACH DISH IS CRAFTED WITH THE SAME
-          DEDICATION AND LOVE. JOIN US AS WE BLEND THE ART OF VEGETARIAN CUISINE
-          WITH THE DIVINE. MAKING YOUR DINING EXPERIENCE AN ODE TO BOTH THE
-          SENSES AND THE SOUL.
+          STEP INTO THE REALM OF TASTE AND DEVOTION AT &quot;SHIVANYA
+          RESTAURANT.&quot;&apos; A PLACE WHERE FLAVORS TRANSCEND AND
+          SPIRITUALITY SINGS. THE NAME &quot;SHIVANYA&quot; PAYS HOMAGE TO THE
+          POWERFUL FUSION OF TWO WORDS: &quot;SHIVA.&quot; THE BENEVOLENT DEITY,
+          AND &quot;ANYA,&quot; REPRESENTING UNIQUENESS. JUST AS LORD SHIVA
+          EMBODIES PURITY AND STRENGTH, OUT ESTABLISHMENT BRINGS YOU A UNIQUE
+          DINING EXPERIENCE. WHERE EACH DISH IS CRAFTED WITH THE SAME DEDICATION
+          AND LOVE. JOIN US AS WE BLEND THE ART OF VEGETARIAN CUISINE WITH THE
+          DIVINE. MAKING YOUR DINING EXPERIENCE AN ODE TO BOTH THE SENSES AND
+          THE SOUL.
         </div>
 
         <footer className="pt-8 pb-4 text-center space-y-2">

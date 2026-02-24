@@ -89,7 +89,10 @@ export default function CheckoutPage() {
   const [tableNumber, setTableNumber] = useState("");
   // Structured Address State
   const [flat, setFlat] = useState("");
+  const PRESET_BUILDINGS = ["Migsun Twiinz", "Migsun Vilaasa"];
   const [building, setBuilding] = useState("Migsun Twiinz");
+  const [buildingSelectValue, setBuildingSelectValue] =
+    useState("Migsun Twiinz");
   const [city] = useState("Greater Noida");
   const [state] = useState("Uttar Pradesh");
   const [country] = useState("India");
@@ -629,20 +632,43 @@ export default function CheckoutPage() {
                         <div className="relative">
                           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-orange-500 transition-colors z-10" />
                           <select
-                            value={building}
-                            onChange={(e) => setBuilding(e.target.value)}
+                            value={buildingSelectValue}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setBuildingSelectValue(val);
+                              if (val !== "__other__") {
+                                setBuilding(val);
+                              } else {
+                                setBuilding("");
+                              }
+                            }}
                             className="w-full pl-10 pr-4 h-12 rounded-xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 appearance-none bg-no-repeat bg-position-[right_1rem_center] cursor-pointer text-sm"
                             style={{
                               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
                               backgroundSize: "1rem",
                             }}
                           >
-                            <option value="Migsun Twiinz">Migsun Twiinz</option>
-                            <option value="Migsun Vilaasa">
-                              Migsun Vilaasa
-                            </option>
+                            {PRESET_BUILDINGS.map((b) => (
+                              <option key={b} value={b}>
+                                {b}
+                              </option>
+                            ))}
+                            <option value="__other__">Other</option>
                           </select>
                         </div>
+                        {/* Custom building name input shown when Other is selected */}
+                        {buildingSelectValue === "__other__" && (
+                          <div className="relative mt-2">
+                            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400" />
+                            <Input
+                              placeholder="Enter building / society name"
+                              value={building}
+                              onChange={(e) => setBuilding(e.target.value)}
+                              autoFocus
+                              className="pl-10 h-12 rounded-xl bg-slate-50 border-none ring-2 ring-orange-200 focus:ring-2 focus:ring-orange-400 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 text-sm"
+                            />
+                          </div>
+                        )}
                       </div>
 
                       {/* Flat Number */}
