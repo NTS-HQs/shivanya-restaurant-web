@@ -237,7 +237,7 @@ export default async function HomePage() {
         </div>
 
         {/* 4. Minimalist Info Dock */}
-        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col items-stretch sm:flex-row sm:items-center justify-between gap-6 overflow-hidden relative">
+        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex flex-col flex-wrap items-stretch sm:flex-row sm:items-center justify-between gap-6 overflow-hidden relative">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0">
               <Clock className="w-5 h-5 text-slate-600" />
@@ -292,20 +292,24 @@ export default async function HomePage() {
 
           <div className="hidden sm:block w-px h-10 bg-slate-100"></div>
           <div className="block sm:hidden h-px w-full bg-slate-100"></div>
-
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0">
-              <MapPin className="w-5 h-5 text-slate-600" />
+          <a
+            href={`https://maps.app.goo.gl/VL4PfabEUVUhvpLy5`}
+            className="flex items-center gap-4 group cursor-pointer"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center shrink-0">
+                <MapPin className="w-5 h-5 text-slate-600 group-hover:text-green-600 transition-colors" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-bold uppercase group-hover:text-green-600 transition-colors">
+                  Location
+                </p>
+                <p className="font-bold text-slate-900 line-clamp-1 max-w-50">
+                  {profile.address.split(",")[0]}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-slate-400 font-bold uppercase">
-                Location
-              </p>
-              <p className="font-bold text-slate-900 line-clamp-1 max-w-50">
-                {profile.address.split(",")[0]}
-              </p>
-            </div>
-          </div>
+          </a>
 
           {/* Subtle pattern */}
           <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-full -mr-16 -mt-16 z-0 opacity-50 pointer-events-none" />

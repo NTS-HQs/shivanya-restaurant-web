@@ -161,7 +161,7 @@ export default function EventsPage() {
             <span className="font-semibold text-lg">WhatsApp</span>
           </a>
           <a
-            href="https://www.instagram.com/"
+            href="https://www.instagram.com/shivanya_restaurant/"
             className="flex items-center gap-3 px-6 py-3 rounded-full shadow bg-pink-100 hover:bg-pink-200 transition w-full md:w-auto"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
