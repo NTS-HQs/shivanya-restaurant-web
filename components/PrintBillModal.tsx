@@ -90,15 +90,15 @@ export default function PrintBillModal({
       .map(
         (item) => `
         <tr>
-          <td style="text-align: left; padding: 2px 0;">${item.name}</td>
-          <td style="text-align: center; padding: 2px 4px;">${
+          <td class="item-name-cell" style="text-align: left; padding: 2px 0;">${item.name}</td>
+          <td class="item-qty-cell" style="text-align: center; padding: 2px 4px;">${
             item.quantity
           }</td>
-          <td style="text-align: right; padding: 2px 0;">₹${(
+          <td class="item-amt-cell" style="text-align: right; padding: 2px 0;">&#8377;${(
             item.price * item.quantity
           ).toFixed(2)}</td>
         </tr>
-      `
+      `,
       )
       .join("");
 
@@ -161,7 +161,11 @@ export default function PrintBillModal({
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 10px;
+      table-layout: fixed;
     }
+    .items-table col.col-item { width: 55%; }
+    .items-table col.col-qty  { width: 10%; }
+    .items-table col.col-amt  { width: 35%; }
     .items-header {
       border-bottom: 1px solid #000;
       font-weight: bold;
@@ -169,6 +173,16 @@ export default function PrintBillModal({
     }
     .items-header td {
       padding-bottom: 6px;
+    }
+    .item-name-cell {
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    .item-qty-cell {
+      white-space: nowrap;
+    }
+    .item-amt-cell {
+      white-space: nowrap;
     }
     .divider {
       border-top: 1px dashed #000;
@@ -259,6 +273,11 @@ export default function PrintBillModal({
   </div>
 
   <table class="items-table">
+    <colgroup>
+      <col class="col-item" />
+      <col class="col-qty" />
+      <col class="col-amt" />
+    </colgroup>
     <tr class="items-header">
       <td style="text-align: left;">ITEM</td>
       <td style="text-align: center;">QTY</td>

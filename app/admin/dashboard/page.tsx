@@ -43,7 +43,7 @@ export default async function DashboardPage() {
         <Card className="p-6 border border-slate-200 shadow-sm bg-white">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-slate-500">
-              Today's Sales
+              Today&apos;s Sales
             </span>
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold text-slate-900 tracking-tight">

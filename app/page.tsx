@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import events from "./eventspage/page";
 import { getRestaurantProfile } from "@/lib/actions/menu";
+import { syncStoreAutoStatus } from "@/lib/actions/seller";
 import { Badge } from "@/components/ui/badge";
 import { BentoCard } from "@/components/ui/bento-card";
 import "../public/shivanya_logo.png";
@@ -23,6 +24,7 @@ import { BannerSlider } from "@/components/ui/banner-slider";
 import { HeaderAuth } from "@/components/HeaderAuth";
 
 export default async function HomePage() {
+  await syncStoreAutoStatus();
   const profile = await getRestaurantProfile();
 
   if (!profile) {
