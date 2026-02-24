@@ -11,8 +11,7 @@ import { ImageUpload } from "@/components/ui/image-upload";
 import {
   Save,
   Loader2,
-  ToggleLeft,
-  ToggleRight,
+  Clock,
   Images,
   Megaphone,
   Plus,
@@ -20,6 +19,17 @@ import {
 } from "lucide-react";
 
 type Profile = Awaited<ReturnType<typeof getRestaurantProfile>>;
+
+function computeIsOpen(openTime: string, closeTime: string): boolean {
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(now.getTime() + istOffset);
+  const hhmm = `${String(ist.getUTCHours()).padStart(2, "0")}:${String(ist.getUTCMinutes()).padStart(2, "0")}`;
+  const overnight = closeTime < openTime;
+  return overnight
+    ? hhmm >= openTime || hhmm < closeTime
+    : hhmm >= openTime && hhmm < closeTime;
+}
 
 export default function SettingsPage() {
   const [profile, setProfile] = useState<Profile>(null);
@@ -32,6 +42,16 @@ export default function SettingsPage() {
   ]);
   const [isPending, startTransition] = useTransition();
   const [saved, setSaved] = useState(false);
+  // Tick increments every minute to force re-evaluation of isOpen
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const isOpen = profile
+    ? computeIsOpen(profile.openTime, profile.closeTime)
+    : false;
 
   useEffect(() => {
     getRestaurantProfile().then((p) => {
@@ -64,22 +84,11 @@ export default function SettingsPage() {
         autoAccept: profile.autoAccept,
         openTime: profile.openTime,
         closeTime: profile.closeTime,
-        isOpen: profile.isOpen,
         paymentQrCode: profile.paymentQrCode || undefined,
         upiId: profile.upiId || undefined,
       });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    });
-  };
-
-  const handleToggleOpen = () => {
-    if (!profile) return;
-    const newStatus = !profile.isOpen;
-    setProfile({ ...profile, isOpen: newStatus });
-
-    startTransition(async () => {
-      await updateRestaurantProfile({ isOpen: newStatus });
     });
   };
 
@@ -300,54 +309,30 @@ export default function SettingsPage() {
 
         {/* Right Column: Operations & Status */}
         <div className="space-y-6">
-          {/* Status Card */}
-          <Card
-            className={`p-6 border shadow-sm transition-all ${
-              profile.isOpen
-                ? "bg-green-50 border-green-100"
-                : "bg-white border-slate-200"
-            }`}
-          >
-            <div className="flex items-center justify-between mb-4">
+          {/* Status Card — read-only, auto-managed by schedule */}
+          <Card className="p-6 border border-slate-200 shadow-sm bg-white">
+            <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-slate-900">
                 Store Status
               </h2>
               <Badge
-                variant={profile.isOpen ? "default" : "secondary"}
-                className={
-                  profile.isOpen ? "bg-green-600 hover:bg-green-700" : ""
-                }
+                variant={isOpen ? "default" : "secondary"}
+                className={isOpen ? "bg-green-600 hover:bg-green-700" : ""}
               >
-                {profile.isOpen ? "OPEN" : "CLOSED"}
+                {isOpen ? "OPEN" : "CLOSED"}
               </Badge>
             </div>
-            <p className="text-sm text-slate-600 mb-6">
-              {profile.isOpen
-                ? "Your store is currently online and accepting orders."
-                : "Your store is offline. Customers cannot place orders."}
+            <div className="flex items-center gap-2 text-sm text-slate-600 mb-3">
+              <Clock className="w-4 h-4 text-slate-400 shrink-0" />
+              <span>
+                Auto-managed · Opens <strong>{profile.openTime}</strong> ·
+                Closes <strong>{profile.closeTime}</strong>
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 bg-slate-50 rounded-md px-3 py-2 border border-slate-100">
+              Store status is automatically set based on business hours above.
+              Update the open/close times below and save to change the schedule.
             </p>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={handleToggleOpen}
-              disabled={isPending}
-              className={`w-full font-bold border-2 ${
-                profile.isOpen
-                  ? "border-green-200 text-green-700 hover:bg-green-100 hover:text-green-800"
-                  : "border-slate-200 text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              {profile.isOpen ? (
-                <span className="flex items-center gap-2">
-                  <ToggleRight className="w-5 h-5" /> Switch to Offline
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <ToggleLeft className="w-5 h-5 text-slate-400" /> Switch to
-                  Online
-                </span>
-              )}
-            </Button>
           </Card>
 
           {/* Operations Card */}

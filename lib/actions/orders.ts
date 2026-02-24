@@ -30,6 +30,25 @@ export async function placeOrder(input: PlaceOrderInput) {
   );
 
   const profile = await prisma.restaurantProfile.findFirst();
+
+  // Guard: check store is open based on schedule (IST)
+  if (profile?.openTime && profile?.closeTime) {
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const ist = new Date(now.getTime() + istOffset);
+    const hhmm = `${String(ist.getUTCHours()).padStart(2, "0")}:${String(ist.getUTCMinutes()).padStart(2, "0")}`;
+    const overnight = profile.closeTime < profile.openTime;
+    const isOpen = overnight
+      ? hhmm >= profile.openTime || hhmm < profile.closeTime
+      : hhmm >= profile.openTime && hhmm < profile.closeTime;
+    if (!isOpen) {
+      return {
+        success: false,
+        error: `Sorry, we are currently closed. We are open from ${profile.openTime} to ${profile.closeTime}.`,
+      };
+    }
+  }
+
   const initialStatus = profile?.autoAccept
     ? OrderStatus.ACCEPTED
     : OrderStatus.PENDING;
@@ -189,7 +208,7 @@ export async function updateOrderStatus(
 
 /* ---------------- DASHBOARD STATS ---------------- */
 
-export async function getDashboardStats() {
+export async function getDashboardStats(period: "daily" | "monthly" = "daily") {
   await requireAdmin();
   if (!process.env.DATABASE_URL)
     return {
@@ -198,17 +217,41 @@ export async function getDashboardStats() {
       deliveredOrders: 0,
       todaySales: 0,
     };
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
-  const [totalOrders, pendingOrders, deliveredOrders, todaySales] =
+  // Compute date boundary in IST (UTC+5:30)
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(now.getTime() + istOffset);
+
+  let periodStart: Date;
+  if (period === "monthly") {
+    // First day of current IST month, midnight UTC
+    const firstOfMonth = new Date(
+      Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), 1) - istOffset,
+    );
+    periodStart = firstOfMonth;
+  } else {
+    // Today midnight IST → UTC
+    const todayMidnightIST = new Date(
+      Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate()) -
+        istOffset,
+    );
+    periodStart = todayMidnightIST;
+  }
+
+  const [totalOrders, pendingOrders, deliveredOrders, periodSales] =
     await Promise.all([
-      prisma.order.count(),
+      prisma.order.count({ where: { createdAt: { gte: periodStart } } }),
       prisma.order.count({ where: { status: OrderStatus.PENDING } }),
-      prisma.order.count({ where: { status: OrderStatus.DELIVERED } }),
+      prisma.order.count({
+        where: {
+          status: OrderStatus.DELIVERED,
+          createdAt: { gte: periodStart },
+        },
+      }),
       prisma.order.aggregate({
         where: {
-          createdAt: { gte: today },
+          createdAt: { gte: periodStart },
           status: OrderStatus.DELIVERED,
         },
         _sum: { totalAmount: true },
@@ -219,7 +262,7 @@ export async function getDashboardStats() {
     totalOrders,
     pendingOrders,
     deliveredOrders,
-    todaySales: todaySales._sum.totalAmount || 0,
+    todaySales: periodSales._sum.totalAmount || 0,
   };
 }
 

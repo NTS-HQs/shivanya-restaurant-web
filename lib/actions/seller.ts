@@ -28,7 +28,6 @@ export async function updateRestaurantProfile(data: {
     where: { id: profile.id },
     data,
   });
-  revalidatePath("/");
   revalidatePath("/menu");
   revalidatePath("/checkout");
   revalidatePath("/admin/dashboard");
@@ -153,8 +152,15 @@ export async function syncStoreAutoStatus() {
   const ist = new Date(now.getTime() + istOffset);
   const hhmm = `${String(ist.getUTCHours()).padStart(2, "0")}:${String(ist.getUTCMinutes()).padStart(2, "0")}`;
 
-  // Compare HH:MM strings (works for same-day ranges, e.g. "09:00" to "22:00")
-  const shouldBeOpen = hhmm >= profile.openTime && hhmm < profile.closeTime;
+  // Compare HH:MM strings — handles both same-day AND overnight ranges
+  // Overnight example: openTime="09:00", closeTime="02:00"
+  //   → store is open if hhmm >= "09:00" OR hhmm < "02:00"
+  // Same-day example: openTime="09:00", closeTime="22:00"
+  //   → store is open if hhmm >= "09:00" AND hhmm < "22:00"
+  const isOvernight = profile.closeTime < profile.openTime;
+  const shouldBeOpen = isOvernight
+    ? hhmm >= profile.openTime || hhmm < profile.closeTime
+    : hhmm >= profile.openTime && hhmm < profile.closeTime;
 
   // Only write to DB if the status needs to change (avoids unnecessary writes)
   if (shouldBeOpen !== profile.isOpen) {
@@ -162,8 +168,9 @@ export async function syncStoreAutoStatus() {
       where: { id: profile.id },
       data: { isOpen: shouldBeOpen },
     });
-    revalidatePath("/");
+    // No revalidatePath here — this is called during render (force-dynamic page).
     revalidatePath("/menu");
     revalidatePath("/checkout");
+    revalidatePath("/admin/*");
   }
 }

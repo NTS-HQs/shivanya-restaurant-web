@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
 import { getDashboardStats, getPendingOrders } from "@/lib/actions/orders";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,41 +10,64 @@ import {
   ShoppingBag,
   Clock,
   CheckCircle2,
-  Package,
-  Truck,
-  UtensilsCrossed,
+  CalendarDays,
+  CalendarRange,
 } from "lucide-react";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const { period: rawPeriod } = await searchParams;
+  const period: "daily" | "monthly" =
+    rawPeriod === "monthly" ? "monthly" : "daily";
+
   const [stats, pendingOrders] = await Promise.all([
-    getDashboardStats(),
+    getDashboardStats(period),
     getPendingOrders(),
   ]);
-
-  const orderTypeIcon = (type: string) => {
-    switch (type) {
-      case "DINE_IN":
-        return <UtensilsCrossed className="w-4 h-4" />;
-      case "TAKEAWAY":
-        return <Package className="w-4 h-4" />;
-      case "DELIVERY":
-        return <Truck className="w-4 h-4" />;
-      default:
-        return null;
-    }
-  };
 
   return (
     <div className="p-6">
       <NotificationPrompt />
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+
+        {/* Period filter */}
+        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-lg">
+          <Link
+            href="?period=daily"
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+              period === "daily"
+                ? "bg-white shadow-sm text-slate-900"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <CalendarDays className="w-4 h-4" />
+            Today
+          </Link>
+          <Link
+            href="?period=monthly"
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-md text-sm font-medium transition-all ${
+              period === "monthly"
+                ? "bg-white shadow-sm text-slate-900"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            <CalendarRange className="w-4 h-4" />
+            This Month
+          </Link>
+        </div>
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card className="p-6 border border-slate-200 shadow-sm bg-white">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-slate-500">
-              Today&apos;s Sales
+              {period === "monthly" ? "Month's Sales" : "Today's Sales"}
             </span>
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold text-slate-900 tracking-tight">
@@ -59,7 +83,7 @@ export default async function DashboardPage() {
         <Card className="p-6 border border-slate-200 shadow-sm bg-white">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-slate-500">
-              Total Orders
+              {period === "monthly" ? "Month's Orders" : "Today's Orders"}
             </span>
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold text-slate-900 tracking-tight">
@@ -89,7 +113,7 @@ export default async function DashboardPage() {
         <Card className="p-6 border border-slate-200 shadow-sm bg-white">
           <div className="flex flex-col gap-1">
             <span className="text-sm font-medium text-slate-500">
-              Delivered
+              {period === "monthly" ? "Month's Delivered" : "Delivered Today"}
             </span>
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold text-slate-900 tracking-tight">

@@ -3,7 +3,6 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import events from "./eventspage/page";
 import { getRestaurantProfile } from "@/lib/actions/menu";
-import { syncStoreAutoStatus } from "@/lib/actions/seller";
 import { Badge } from "@/components/ui/badge";
 import { BentoCard } from "@/components/ui/bento-card";
 import "../public/shivanya_logo.png";
@@ -24,8 +23,23 @@ import { BannerSlider } from "@/components/ui/banner-slider";
 import { HeaderAuth } from "@/components/HeaderAuth";
 
 export default async function HomePage() {
-  await syncStoreAutoStatus();
   const profile = await getRestaurantProfile();
+
+  // Compute open/close from scheduled hours — no DB write needed
+  const computeIsOpen = (openTime: string, closeTime: string): boolean => {
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const ist = new Date(now.getTime() + istOffset);
+    const hhmm = `${String(ist.getUTCHours()).padStart(2, "0")}:${String(ist.getUTCMinutes()).padStart(2, "0")}`;
+    const overnight = closeTime < openTime;
+    return overnight
+      ? hhmm >= openTime || hhmm < closeTime
+      : hhmm >= openTime && hhmm < closeTime;
+  };
+
+  const isOpen = profile
+    ? computeIsOpen(profile.openTime, profile.closeTime)
+    : false;
 
   if (!profile) {
     return (
@@ -60,17 +74,17 @@ export default async function HomePage() {
             <Badge
               variant="outline"
               className={`rounded-full px-4 py-1.5 border-0 font-bold ${
-                profile.isOpen
+                isOpen
                   ? "bg-green-100 text-green-700 ring-1 ring-green-200"
                   : "bg-red-100 text-red-700 ring-1 ring-red-200"
               }`}
             >
               <span
                 className={`w-2 h-2 rounded-full mr-2 ${
-                  profile.isOpen ? "bg-green-600 animate-pulse" : "bg-red-600"
+                  isOpen ? "bg-green-600 animate-pulse" : "bg-red-600"
                 }`}
               />
-              {profile.isOpen ? "Open Now" : "Closed"}
+              {isOpen ? "Open Now" : "Closed"}
             </Badge>
             <HeaderAuth />
           </div>
