@@ -133,12 +133,11 @@ export default async function HomePage() {
           >
             <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-20">
               <h1 className="text-4xl sm:text-5xl font-black mb-2 leading-tight">
-                Delicious Food, <br />
-                <span className="text-orange-400">Straight to You.</span>
+               Doorstep to Celebrations,<br />
+                <span className="text-orange-400">You Dine & Celebrate.</span>
               </h1>
               <p className="text-white/80 font-medium max-w-md">
-                Experience the authentic flavors. Fresh ingredients, made with
-                love.
+                We manage the magic. You enjoy the celebration.
               </p>
             </div>
           </BannerSlider>
@@ -331,17 +330,30 @@ export default async function HomePage() {
           <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-full -mr-16 -mt-16 z-0 opacity-50 pointer-events-none" />
         </div>
 
-        <div className="bg-white rounded-[2rem] p-6 md:p-16  shadow-sm border border-slate-100 text-center text-lg ">
-          STEP INTO THE REALM OF TASTE AND DEVOTION AT &quot;SHIVANYA
-          RESTAURANT.&quot;&apos; A PLACE WHERE FLAVORS TRANSCEND AND
-          SPIRITUALITY SINGS. THE NAME &quot;SHIVANYA&quot; PAYS HOMAGE TO THE
-          POWERFUL FUSION OF TWO WORDS: &quot;SHIVA.&quot; THE BENEVOLENT DEITY,
-          AND &quot;ANYA,&quot; REPRESENTING UNIQUENESS. JUST AS LORD SHIVA
-          EMBODIES PURITY AND STRENGTH, OUT ESTABLISHMENT BRINGS YOU A UNIQUE
-          DINING EXPERIENCE. WHERE EACH DISH IS CRAFTED WITH THE SAME DEDICATION
-          AND LOVE. JOIN US AS WE BLEND THE ART OF VEGETARIAN CUISINE WITH THE
-          DIVINE. MAKING YOUR DINING EXPERIENCE AN ODE TO BOTH THE SENSES AND
-          THE SOUL.
+        <div className="bg-white rounded-[2rem] p-6 md:p-16 shadow-sm border border-slate-100 text-center text-lg">
+          <h2 className="text-2xl md:text-3xl font-semibold mb-6">
+            Welcome to Shivanya
+          </h2>
+
+          <p className="mb-4">
+            <strong>A Place Where Food Feels Like a Blessing</strong>
+          </p>
+
+          <p className="mb-4">
+            At Shivanya, every meal is made with heart. Inspired by “Shiva,” symbolising strength and purity,
+            and “Anya,” meaning unique, our name reflects our promise to serve food that is special, soulful,
+            and full of care.
+          </p>
+
+          <p className="mb-4">
+            We believe great food brings people together. That’s why every vegetarian dish is prepared with
+            fresh ingredients, honest flavours, and true dedication.
+          </p>
+
+          <p>
+            Step in as a guest. Leave with a smile. Experience food that satisfies not just your hunger,
+            but your heart.
+          </p>
         </div>
 
         <footer className="pt-8 pb-4 text-center space-y-2">
