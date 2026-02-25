@@ -104,6 +104,12 @@ export default function CheckoutPage() {
   const [isPlacing, setIsPlacing] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"UPI" | "CASH">("UPI");
+  const [formError, setFormError] = useState("");
+
+  useEffect(() => {
+    if (formError) setFormError("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerName, customerMobile, tableNumber, pickupTime, building, flat, orderType]);
 
   // ── Inline OTP verification ───────────────────────────────────────────────
   type OtpStep = "idle" | "sending" | "sent" | "verifying";
@@ -201,9 +207,40 @@ export default function CheckoutPage() {
       (building.trim() && flat.trim() && pincode.trim())) &&
     (orderType !== "TAKEAWAY" || isValidPickupTime(pickupTime));
 
+  const isFieldError = (field: string) => {
+    if (!formError) return false;
+    switch (field) {
+      case "name":
+        return !isAuthenticated && !customerName.trim();
+      case "mobile":
+        return !isAuthenticated && customerMobile.trim().length < 10;
+      case "tableNumber":
+        return orderType === "DINE_IN" && !tableNumber.trim();
+      case "pickupTime":
+        return orderType === "TAKEAWAY" && !pickupTime.trim();
+      case "building":
+        return orderType === "DELIVERY" && !building.trim();
+      case "flat":
+        return orderType === "DELIVERY" && !flat.trim();
+      default:
+        return false;
+    }
+  };
+
   const handleProceedToPayment = () => {
     if (canProceed) {
+      setFormError("");
       setShowPayment(true);
+    } else {
+      setFormError("Please fill all required fields");
+      setTimeout(() => {
+        const firstErrorField = document.querySelector(".error-field") as HTMLElement;
+        if (firstErrorField) {
+          firstErrorField.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      }, 100);
     }
   };
 
@@ -238,9 +275,8 @@ export default function CheckoutPage() {
         tableNumber: orderType === "DINE_IN" ? tableNumber : undefined,
         address:
           orderType === "DELIVERY"
-            ? `Flat ${flat}, ${building}${
-                landmark ? ", Near " + landmark : ""
-              }, ${city}, ${state} - ${pincode}, ${country}`
+            ? `Flat ${flat}, ${building}${landmark ? ", Near " + landmark : ""
+            }, ${city}, ${state} - ${pincode}, ${country}`
             : undefined,
         pickupTime: orderType === "TAKEAWAY" ? pickupTime : undefined,
         items: items.map((i) => ({
@@ -405,26 +441,23 @@ export default function CheckoutPage() {
                   onClick={() => setOrderType(type)}
                   className={`
                      relative p-4 rounded-[1.5rem] transition-all duration-300 flex flex-col items-center gap-3 group overflow-hidden
-                     ${
-                       orderType === type
-                         ? "bg-white ring-2 ring-orange-500 shadow-xl shadow-orange-100/50 scale-[1.02]"
-                         : "bg-white border border-slate-100 hover:border-orange-200 text-slate-400 hover:text-orange-500 hover:shadow-md"
-                     }
+                     ${orderType === type
+                      ? "bg-white ring-2 ring-orange-500 shadow-xl shadow-orange-100/50 scale-[1.02]"
+                      : "bg-white border border-slate-100 hover:border-orange-200 text-slate-400 hover:text-orange-500 hover:shadow-md"
+                    }
                    `}
                 >
                   <div
-                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
-                      orderType === type
-                        ? "bg-orange-50 text-orange-600"
-                        : "bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-orange-500"
-                    }`}
+                    className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${orderType === type
+                      ? "bg-orange-50 text-orange-600"
+                      : "bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-orange-500"
+                      }`}
                   >
                     <Icon className="w-6 h-6" />
                   </div>
                   <span
-                    className={`font-bold text-sm ${
-                      orderType === type ? "text-slate-900" : "text-slate-500"
-                    }`}
+                    className={`font-bold text-sm ${orderType === type ? "text-slate-900" : "text-slate-500"
+                      }`}
                   >
                     {label}
                   </span>
@@ -440,6 +473,19 @@ export default function CheckoutPage() {
 
           {/* 2. Customer Details */}
           <section className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100/50">
+            <AnimatePresence>
+              {formError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 shadow-sm flex items-center gap-3 overflow-hidden"
+                >
+                  <Info className="w-5 h-5 text-red-500 shrink-0" />
+                  <p className="text-sm font-bold text-red-600">{formError}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
             <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
                 <User className="w-4 h-4" />
@@ -459,7 +505,10 @@ export default function CheckoutPage() {
                     }
                     onChange={(e) => setCustomerName(e.target.value)}
                     disabled={isAuthenticated}
-                    className="pl-12 h-14 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 disabled:opacity-70 disabled:cursor-not-allowed"
+                    className={`pl-12 h-14 rounded-2xl bg-slate-50 border-none transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 disabled:opacity-70 disabled:cursor-not-allowed ${isFieldError("name")
+                      ? "ring-2 ring-red-500 focus:ring-red-500 error-field"
+                      : "ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200"
+                      }`}
                   />
                 </div>
                 <div className="relative group">
@@ -470,7 +519,10 @@ export default function CheckoutPage() {
                     value={isAuthenticated ? user?.phone || "" : customerMobile}
                     onChange={(e) => setCustomerMobile(e.target.value)}
                     disabled={isAuthenticated}
-                    className="pl-12 h-14 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 disabled:opacity-70 disabled:cursor-not-allowed"
+                    className={`pl-12 h-14 rounded-2xl bg-slate-50 border-none transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 disabled:opacity-70 disabled:cursor-not-allowed ${isFieldError("mobile")
+                      ? "ring-2 ring-red-500 focus:ring-red-500 error-field"
+                      : "ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200"
+                      }`}
                   />
                 </div>
               </div>
@@ -586,7 +638,10 @@ export default function CheckoutPage() {
                       placeholder="Table Number"
                       value={tableNumber}
                       onChange={(e) => setTableNumber(e.target.value)}
-                      className="pl-12 h-14 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80"
+                      className={`pl-12 h-14 rounded-2xl bg-slate-50 border-none transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 ${isFieldError("tableNumber")
+                        ? "ring-2 ring-red-500 focus:ring-red-500 error-field"
+                        : "ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200"
+                        }`}
                     />
                   </motion.div>
                 )}
@@ -604,11 +659,12 @@ export default function CheckoutPage() {
                       type="time"
                       value={pickupTime}
                       onChange={(e) => setPickupTime(e.target.value)}
-                      className={`pl-12 h-14 rounded-2xl bg-slate-50 border-none ring-1 focus:ring-2 transition-all font-bold text-slate-700 ${
-                        pickupTime && !isValidPickupTime(pickupTime)
-                          ? "ring-red-200 focus:ring-red-300 text-red-600"
-                          : "ring-slate-100 focus:ring-orange-200"
-                      }`}
+                      className={`pl-12 h-14 rounded-2xl bg-slate-50 border-none transition-all font-bold text-slate-700 ${isFieldError("pickupTime")
+                        ? "ring-2 ring-red-500 focus:ring-red-500 error-field"
+                        : pickupTime && !isValidPickupTime(pickupTime)
+                          ? "ring-1 ring-red-200 focus:ring-2 focus:ring-red-300 text-red-600"
+                          : "ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200"
+                        }`}
                     />
                     {pickupTime &&
                       !isValidPickupTime(pickupTime) &&
@@ -648,7 +704,10 @@ export default function CheckoutPage() {
                                 setBuilding("");
                               }
                             }}
-                            className="w-full pl-10 pr-4 h-12 rounded-xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 appearance-none bg-no-repeat bg-position-[right_1rem_center] cursor-pointer text-sm"
+                            className={`w-full pl-10 pr-4 h-12 rounded-xl bg-slate-50 border-none transition-all font-bold text-slate-700 appearance-none bg-no-repeat bg-position-[right_1rem_center] cursor-pointer text-sm ${buildingSelectValue !== "__other__" && isFieldError("building")
+                              ? "ring-2 ring-red-500 focus:ring-red-500 error-field"
+                              : "ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200"
+                              }`}
                             style={{
                               backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")`,
                               backgroundSize: "1rem",
@@ -671,7 +730,10 @@ export default function CheckoutPage() {
                               value={building}
                               onChange={(e) => setBuilding(e.target.value)}
                               autoFocus
-                              className="pl-10 h-12 rounded-xl bg-slate-50 border-none ring-2 ring-orange-200 focus:ring-2 focus:ring-orange-400 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 text-sm"
+                              className={`pl-10 h-12 rounded-xl bg-slate-50 border-none transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 text-sm ${isFieldError("building")
+                                ? "ring-2 ring-red-500 focus:ring-red-500 error-field"
+                                : "ring-2 ring-orange-200 focus:ring-4 focus:ring-orange-400"
+                                }`}
                             />
                           </div>
                         )}
@@ -688,7 +750,10 @@ export default function CheckoutPage() {
                             placeholder="e.g. A-101"
                             value={flat}
                             onChange={(e) => setFlat(e.target.value)}
-                            className="pl-10 h-12 rounded-xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200 transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 text-sm"
+                            className={`pl-10 h-12 rounded-xl bg-slate-50 border-none transition-all font-bold text-slate-700 placeholder:font-medium placeholder:text-slate-400/80 text-sm ${isFieldError("flat")
+                              ? "ring-2 ring-red-500 focus:ring-red-500 error-field"
+                              : "ring-1 ring-slate-100 focus:ring-2 focus:ring-orange-200"
+                              }`}
                           />
                         </div>
                       </div>
@@ -866,8 +931,7 @@ export default function CheckoutPage() {
         <div className="max-w-4xl mx-auto">
           <Button
             onClick={handleProceedToPayment}
-            disabled={!canProceed}
-            className="w-full bg-slate-900 hover:bg-black disabled:bg-slate-700 disabled:text-slate-400 disabled:opacity-100 text-white h-20 rounded-[2rem] shadow-2xl shadow-slate-300 flex items-center justify-between px-8 text-lg font-bold transition-all transform active:scale-[0.99]"
+            className="w-full bg-slate-900 hover:bg-black text-white h-20 rounded-[2rem] shadow-2xl shadow-slate-300 flex items-center justify-between px-8 text-lg font-bold transition-all transform active:scale-[0.99]"
           >
             <span className="flex flex-col items-start">
               <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">
@@ -918,22 +982,20 @@ export default function CheckoutPage() {
               <div className="grid grid-cols-2 gap-3 mb-4 relative z-10">
                 <button
                   onClick={() => setPaymentMethod("UPI")}
-                  className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${
-                    paymentMethod === "UPI"
-                      ? "border-orange-500 bg-orange-50 text-orange-700"
-                      : "border-slate-100 bg-white text-slate-500 hover:bg-slate-50"
-                  }`}
+                  className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${paymentMethod === "UPI"
+                    ? "border-orange-500 bg-orange-50 text-orange-700"
+                    : "border-slate-100 bg-white text-slate-500 hover:bg-slate-50"
+                    }`}
                 >
                   <QrCode className="w-6 h-6" />
                   <span className="font-bold text-xs">UPI / QR</span>
                 </button>
                 <button
                   onClick={() => setPaymentMethod("CASH")}
-                  className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${
-                    paymentMethod === "CASH"
-                      ? "border-orange-500 bg-orange-50 text-orange-700"
-                      : "border-slate-100 bg-white text-slate-500 hover:bg-slate-50"
-                  }`}
+                  className={`p-3 rounded-xl border transition-all flex flex-col items-center gap-1 ${paymentMethod === "CASH"
+                    ? "border-orange-500 bg-orange-50 text-orange-700"
+                    : "border-slate-100 bg-white text-slate-500 hover:bg-slate-50"
+                    }`}
                 >
                   <Banknote className="w-6 h-6" />
                   <span className="font-bold text-xs">Cash</span>
