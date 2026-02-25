@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, LogOut } from "lucide-react";
+import { User, LogOut, ClipboardList } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/authStore";
 import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
@@ -20,13 +20,20 @@ export function HeaderAuth() {
 
   if (isAuthenticated && user) {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-full border border-slate-200">
           <User className="w-4 h-4 text-slate-600" />
           <span className="text-xs font-bold text-slate-700 max-w-[80px] truncate">
-            {user.name?.replace(/^User \\d{4}$/, "User") || "User"}
+            {user.name?.replace(/^User \d{4}$/, "User") || "User"}
           </span>
         </div>
+        <Link
+          href="/my-orders"
+          className="flex items-center justify-center p-1.5 rounded-full bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
+          title="My Orders"
+        >
+          <ClipboardList className="w-4 h-4" />
+        </Link>
         <button
           onClick={() => {
             logout();

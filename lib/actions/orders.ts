@@ -5,6 +5,8 @@ import { OrderType, OrderStatus } from "@prisma/client";
 import { sendToPrinter } from "@/lib/printerSocket";
 import { sendPushNotification } from "@/lib/pushNotification";
 import { requireAdmin } from "@/lib/authGuard";
+import { cookies } from "next/headers";
+import { verifyToken } from "@/lib/jwt";
 
 type CartItem = {
   id: string;
@@ -21,6 +23,8 @@ type PlaceOrderInput = {
   address?: string;
   pickupTime?: string;
   items: CartItem[];
+  /** Admin-only: override the order's createdAt timestamp (ISO string) */
+  customDate?: string;
 };
 
 export async function placeOrder(input: PlaceOrderInput) {
@@ -77,6 +81,18 @@ export async function placeOrder(input: PlaceOrderInput) {
     };
   }
 
+  // Admin-only: verify createdAt override
+  let orderCreatedAt: Date | undefined;
+  if (input.customDate) {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("admin_token")?.value;
+    const payload = token ? verifyToken(token) : null;
+    if (payload && (payload as Record<string, unknown>).role === "admin") {
+      const parsed = new Date(input.customDate);
+      if (!isNaN(parsed.getTime())) orderCreatedAt = parsed;
+    }
+  }
+
   // Create order
   const order = await prisma.order.create({
     data: {
@@ -88,6 +104,7 @@ export async function placeOrder(input: PlaceOrderInput) {
       address: input.address,
       pickupTime: input.pickupTime,
       totalAmount,
+      ...(orderCreatedAt ? { createdAt: orderCreatedAt } : {}),
       items: {
         create: input.items.map((item) => {
           const parts = item.id.split("-");
@@ -316,4 +333,18 @@ export async function getCustomerList() {
   return Array.from(map.values())
     .map((e) => ({ ...e, types: Array.from(e.types) as string[] }))
     .sort((a, b) => b.lastOrder.getTime() - a.lastOrder.getTime());
+}
+
+/* ---------------- CUSTOMER ORDER HISTORY ---------------- */
+
+export async function getMyOrders(phone: string) {
+  if (!process.env.DATABASE_URL || !phone) return [];
+  const normalized = phone.replace(/\D/g, "").slice(-10);
+  if (!normalized) return [];
+  return prisma.order.findMany({
+    where: { customerMobile: { contains: normalized } },
+    include: { items: true },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
 }

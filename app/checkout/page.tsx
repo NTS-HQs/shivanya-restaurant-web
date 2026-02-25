@@ -254,9 +254,9 @@ export default function CheckoutPage() {
       if (result.success && result.orderId) {
         setOrderSuccess(result.orderId);
         clearCart();
-        // Redirect to menu page after a short delay
+        // Redirect to order history after a short delay
         setTimeout(() => {
-          router.push("/menu");
+          router.push("/my-orders");
         }, 2000);
       } else {
         alert(result.error || "Failed to place order. Please try again.");
@@ -302,10 +302,16 @@ export default function CheckoutPage() {
                 received your ticket.
               </p>
 
-              <Link href="/menu" className="w-full">
-                <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-2xl py-6 font-bold text-lg shadow-xl shadow-slate-200 transition-transform active:scale-95">
-                  Back to Menu
+              <Link href="/my-orders" className="w-full">
+                <Button className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-2xl py-6 font-bold text-lg shadow-xl shadow-orange-200 transition-transform active:scale-95">
+                  View My Orders
                 </Button>
+              </Link>
+              <Link
+                href="/menu"
+                className="w-full mt-3 block text-center text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                Back to Menu
               </Link>
             </div>
           </div>

@@ -137,6 +137,44 @@ export async function getCategories() {
   return categories;
 }
 
+export async function checkAdminSession(): Promise<boolean> {
+  try {
+    await requireAdmin();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function reorderCategory(
+  categoryId: string,
+  direction: "up" | "down",
+) {
+  await requireAdmin();
+  const categories = await prisma.category.findMany({
+    orderBy: { sortOrder: "asc" },
+  });
+  const idx = categories.findIndex((c) => c.id === categoryId);
+  if (idx === -1) return { success: false };
+  const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+  if (swapIdx < 0 || swapIdx >= categories.length) return { success: false };
+  const a = categories[idx];
+  const b = categories[swapIdx];
+  await prisma.$transaction([
+    prisma.category.update({
+      where: { id: a.id },
+      data: { sortOrder: b.sortOrder },
+    }),
+    prisma.category.update({
+      where: { id: b.id },
+      data: { sortOrder: a.sortOrder },
+    }),
+  ]);
+  revalidatePath("/menu");
+  revalidatePath("/admin/menu");
+  return { success: true };
+}
+
 /**
  * Automatically syncs store open/close status based on scheduled openTime/closeTime.
  * Safe to call on every public page render — only writes to DB when status actually changes.

@@ -18,6 +18,7 @@ import {
   Phone,
   Loader2,
   CheckCircle,
+  Calendar,
 } from "lucide-react";
 
 type Category = Awaited<ReturnType<typeof getMenuWithCategories>>[0];
@@ -48,6 +49,14 @@ export default function POSPage() {
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [showCart, setShowCart] = useState(false);
 
+  // Default to current date-time in datetime-local format
+  const todayLocal = () => {
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  };
+  const [customBillDate, setCustomBillDate] = useState(todayLocal);
+
   useEffect(() => {
     getMenuWithCategories().then((data) => {
       setCategories(data);
@@ -63,15 +72,15 @@ export default function POSPage() {
 
   const addToCart = (item: MenuItem, variant: Variant) => {
     if (!variant.price) return;
-    
+
     const itemId = `${item.id}-${variant.name}`;
     const itemName = `${item.name} (${variant.name})`;
-    
+
     setCart((prev) => {
       const existing = prev.find((i) => i.id === itemId);
       if (existing) {
         return prev.map((i) =>
-          i.id === itemId ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === itemId ? { ...i, quantity: i.quantity + 1 } : i,
         );
       }
       return [
@@ -89,13 +98,13 @@ export default function POSPage() {
             return { ...item, quantity: Math.max(0, item.quantity + delta) };
           return item;
         })
-        .filter((i) => i.quantity > 0)
+        .filter((i) => i.quantity > 0),
     );
   };
 
   const totalAmount = cart.reduce(
     (sum, item) => sum + item.price * item.quantity,
-    0
+    0,
   );
 
   const handlePlaceOrder = () => {
@@ -108,6 +117,7 @@ export default function POSPage() {
         type: "DINE_IN",
         tableNumber: tableNumber || undefined,
         items: cart,
+        customDate: customBillDate || undefined,
       });
       if (result.success && result.orderId) {
         setOrderSuccess(result.orderId);
@@ -115,6 +125,7 @@ export default function POSPage() {
         setCustomerName("");
         setCustomerMobile("");
         setTableNumber("");
+        setCustomBillDate(todayLocal());
         setShowCart(false);
         setTimeout(() => setOrderSuccess(null), 3000);
       }
@@ -128,7 +139,7 @@ export default function POSPage() {
       : categories.find((c) => c.id === activeCategory)?.items || [];
 
   const filteredItems = itemsToFilter.filter((i) =>
-    i.name.toLowerCase().includes(search.toLowerCase())
+    i.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   console.log("POS Items:", {
@@ -203,17 +214,23 @@ export default function POSPage() {
                   <div className="space-y-1">
                     {variants.length > 0 ? (
                       variants.map((variant, idx) => (
-                        <div 
+                        <div
                           key={idx}
                           className="flex justify-between items-center cursor-pointer hover:bg-slate-50 p-1 rounded"
                           onClick={() => addToCart(item, variant)}
                         >
-                          <span className="text-xs text-slate-600">{variant.name}</span>
-                          <span className="text-orange-600 font-bold text-sm">₹{variant.price}</span>
+                          <span className="text-xs text-slate-600">
+                            {variant.name}
+                          </span>
+                          <span className="text-orange-600 font-bold text-sm">
+                            ₹{variant.price}
+                          </span>
                         </div>
                       ))
                     ) : (
-                      <span className="text-xs text-slate-400">No variants</span>
+                      <span className="text-xs text-slate-400">
+                        No variants
+                      </span>
                     )}
                   </div>
                 </Card>
@@ -281,6 +298,15 @@ export default function POSPage() {
               value={customerMobile}
               onChange={(e) => setCustomerMobile(e.target.value)}
               className="pl-9 h-8"
+            />
+          </div>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500 pointer-events-none" />
+            <input
+              type="datetime-local"
+              value={customBillDate}
+              onChange={(e) => setCustomBillDate(e.target.value)}
+              className="w-full pl-9 h-8 rounded-md text-xs font-bold text-slate-700 bg-amber-50 border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-300 transition-all"
             />
           </div>
         </div>

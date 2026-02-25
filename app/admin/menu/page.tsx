@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import {
+  useEffect,
+  useState,
+  useTransition,
+  useMemo,
+  useCallback,
+} from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +21,7 @@ import {
   createCategory,
   deleteCategory,
   getCategories,
+  reorderCategory,
   Variant,
 } from "@/lib/actions/seller";
 import {
@@ -27,6 +34,9 @@ import {
   Pencil,
   Trash2,
   X,
+  ChevronUp,
+  ChevronDown,
+  ChevronsUpDown,
 } from "lucide-react";
 
 type MenuItem = Awaited<ReturnType<typeof getAllMenuItems>>[0];
@@ -51,25 +61,28 @@ export default function MenuManagementPage() {
   const [newCategoryName, setNewCategoryName] = useState("");
   const [showInlineCategoryAdd, setShowInlineCategoryAdd] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     const [menuItems, cats] = await Promise.all([
       getAllMenuItems(),
       getCategories(),
     ]);
     setItems(menuItems);
     setCategories(cats);
-  };
+  }, []);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [fetchData]);
 
-  const handleToggleAvailability = (itemId: string, currentStatus: boolean) => {
-    startTransition(async () => {
-      await toggleMenuItem(itemId, !currentStatus);
-      await fetchData();
-    });
-  };
+  const handleToggleAvailability = useCallback(
+    (itemId: string, currentStatus: boolean) => {
+      startTransition(async () => {
+        await toggleMenuItem(itemId, !currentStatus);
+        await fetchData();
+      });
+    },
+    [fetchData],
+  );
 
   const handleAddItem = () => {
     if (!newItem.name || !newItem.categoryId) return;
@@ -148,14 +161,16 @@ export default function MenuManagementPage() {
     });
   };
 
-  const handleDeleteItem = (itemId: string) => {
-    if (!confirm("Are you sure you want to delete this item?")) return;
-
-    startTransition(async () => {
-      await deleteMenuItem(itemId);
-      await fetchData();
-    });
-  };
+  const handleDeleteItem = useCallback(
+    (itemId: string) => {
+      if (!confirm("Are you sure you want to delete this item?")) return;
+      startTransition(async () => {
+        await deleteMenuItem(itemId);
+        await fetchData();
+      });
+    },
+    [fetchData],
+  );
 
   const handleAddCategory = () => {
     if (!newCategoryName.trim()) return;
@@ -187,6 +202,47 @@ export default function MenuManagementPage() {
       }
     });
   };
+
+  const handleReorder = (categoryId: string, direction: "up" | "down") => {
+    startTransition(async () => {
+      await reorderCategory(categoryId, direction);
+      await fetchData();
+    });
+  };
+
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
+    new Set(),
+  );
+  const toggleCollapse = useCallback((categoryId: string) => {
+    setCollapsedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) next.delete(categoryId);
+      else next.add(categoryId);
+      return next;
+    });
+  }, []);
+
+  const allCollapsed =
+    categories.length > 0 && collapsedCategories.size === categories.length;
+  const toggleCollapseAll = useCallback(() => {
+    setCollapsedCategories((prev) =>
+      prev.size === categories.length
+        ? new Set()
+        : new Set(categories.map((c) => c.id)),
+    );
+  }, [categories]);
+
+  // Memoise the per-category item lists so the grid only re-renders when items change
+  const itemsByCategory = useMemo(() => {
+    const map = new Map<string, typeof items>();
+    for (const cat of categories) {
+      map.set(
+        cat.id,
+        items.filter((i) => i.categoryId === cat.id),
+      );
+    }
+    return map;
+  }, [categories, items]);
 
   const addVariant = (isNewItem: boolean) => {
     if (isNewItem) {
@@ -237,6 +293,17 @@ export default function MenuManagementPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Menu Management</h1>
         <div className="flex gap-2">
+          {categories.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleCollapseAll}
+              className="gap-1.5 text-slate-600"
+            >
+              <ChevronsUpDown className="w-4 h-4" />
+              {allCollapsed ? "Expand All" : "Collapse All"}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setShowAddCategory(true)}>
             <Plus className="w-4 h-4 mr-1" /> Category
           </Button>
@@ -682,141 +749,182 @@ export default function MenuManagementPage() {
           </Card>
         )}
 
-        {categories.map((category) => {
-          const categoryItems = items.filter(
-            (i) => i.categoryId === category.id,
-          );
+        {categories.map((category, catIdx) => {
+          const categoryItems = itemsByCategory.get(category.id) ?? [];
 
           return (
             <div key={category.id}>
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-lg font-bold text-orange-600">
-                  {category.name}
-                  {categoryItems.length === 0 && (
-                    <span className="ml-2 text-sm font-normal text-slate-400">
-                      (empty)
-                    </span>
-                  )}
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    handleDeleteCategory(category.id, category.name)
-                  }
-                  disabled={isPending}
-                  className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 px-2"
-                  title={`Delete ${category.name}`}
+                <button
+                  onClick={() => toggleCollapse(category.id)}
+                  className="flex items-center gap-2 group flex-1 min-w-0 text-left"
                 >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {categoryItems.map((item) => (
-                  <Card
-                    key={item.id}
-                    className={`p-4 border border-slate-200 shadow-sm bg-white hover:shadow-md transition-all ${
-                      !item.isAvailable ? "opacity-60 bg-slate-50" : ""
+                  <ChevronDown
+                    className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
+                      collapsedCategories.has(category.id) ? "-rotate-90" : ""
                     }`}
+                  />
+                  <h2 className="text-lg font-bold text-orange-600 truncate">
+                    {category.name}
+                    {categoryItems.length === 0 && (
+                      <span className="ml-2 text-sm font-normal text-slate-400">
+                        (empty)
+                      </span>
+                    )}
+                    <span className="ml-2 text-sm font-normal text-slate-400">
+                      · {categoryItems.length} item
+                      {categoryItems.length !== 1 ? "s" : ""}
+                    </span>
+                  </h2>
+                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleReorder(category.id, "up")}
+                    disabled={isPending || catIdx === 0}
+                    className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 h-8 w-8 p-0 disabled:opacity-25"
+                    title="Move up"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-3">
-                        {/* Thumbnail */}
-                        <div className="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden shrink-0">
-                          {item.image ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-xl">
-                              🍲
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            {item.isVeg ? (
-                              <Badge
-                                variant="outline"
-                                className="border-green-500 text-green-600"
-                              >
-                                <Leaf className="w-3 h-3" />
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="outline"
-                                className="border-red-500 text-red-600"
-                              >
-                                <Drumstick className="w-3 h-3" />
-                              </Badge>
-                            )}
-                            <span className="font-bold">{item.name}</span>
-                          </div>
-                          {item.description && (
-                            <p className="text-sm text-muted-foreground mr-1 line-clamp-1">
-                              {item.description}
-                            </p>
-                          )}
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {getItemVariants(item).map((variant, idx) => (
-                              <span
-                                key={idx}
-                                className="text-sm font-medium text-orange-600"
-                              >
-                                {variant.name}: ₹{variant.price}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-1 flex-col">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => startEditing(item)}
-                          title="Edit"
-                          className="h-8 w-8"
-                        >
-                          <Pencil className="w-4 h-4 text-blue-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            handleToggleAvailability(item.id, item.isAvailable)
-                          }
-                          title={
-                            item.isAvailable
-                              ? "Mark Unavailable"
-                              : "Mark Available"
-                          }
-                          className="h-8 w-8"
-                        >
-                          {item.isAvailable ? (
-                            <ToggleRight className="w-6 h-6 text-green-600" />
-                          ) : (
-                            <ToggleLeft className="w-6 h-6 text-gray-400" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteItem(item.id)}
-                          title="Delete"
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                    <ChevronUp className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleReorder(category.id, "down")}
+                    disabled={isPending || catIdx === categories.length - 1}
+                    className="text-slate-400 hover:text-slate-700 hover:bg-slate-100 h-8 w-8 p-0 disabled:opacity-25"
+                    title="Move down"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() =>
+                      handleDeleteCategory(category.id, category.name)
+                    }
+                    disabled={isPending}
+                    className="text-red-400 hover:text-red-600 hover:bg-red-50 h-8 px-2"
+                    title={`Delete ${category.name}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </div>
+              {!collapsedCategories.has(category.id) && (
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {categoryItems.map((item) => (
+                    <Card
+                      key={item.id}
+                      className={`p-4 border border-slate-200 shadow-sm bg-white hover:shadow-md transition-all ${
+                        !item.isAvailable ? "opacity-60 bg-slate-50" : ""
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex gap-3">
+                          {/* Thumbnail */}
+                          <div className="w-16 h-16 rounded-lg bg-slate-100 overflow-hidden shrink-0">
+                            {item.image ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                loading="lazy"
+                                decoding="async"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-xl">
+                                🍲
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              {item.isVeg ? (
+                                <Badge
+                                  variant="outline"
+                                  className="border-green-500 text-green-600"
+                                >
+                                  <Leaf className="w-3 h-3" />
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="border-red-500 text-red-600"
+                                >
+                                  <Drumstick className="w-3 h-3" />
+                                </Badge>
+                              )}
+                              <span className="font-bold">{item.name}</span>
+                            </div>
+                            {item.description && (
+                              <p className="text-sm text-muted-foreground mr-1 line-clamp-1">
+                                {item.description}
+                              </p>
+                            )}
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              {getItemVariants(item).map((variant, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-sm font-medium text-orange-600"
+                                >
+                                  {variant.name}: ₹{variant.price}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-1 flex-col">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => startEditing(item)}
+                            title="Edit"
+                            className="h-8 w-8"
+                          >
+                            <Pencil className="w-4 h-4 text-blue-600" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              handleToggleAvailability(
+                                item.id,
+                                item.isAvailable,
+                              )
+                            }
+                            title={
+                              item.isAvailable
+                                ? "Mark Unavailable"
+                                : "Mark Available"
+                            }
+                            className="h-8 w-8"
+                          >
+                            {item.isAvailable ? (
+                              <ToggleRight className="w-6 h-6 text-green-600" />
+                            ) : (
+                              <ToggleLeft className="w-6 h-6 text-gray-400" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteItem(item.id)}
+                            title="Delete"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}

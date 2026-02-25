@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,6 +62,16 @@ export function MenuClient({
   profile: Profile;
 }) {
   const [activeCategory, setActiveCategory] = useState("all");
+  const menuGridRef = useRef<HTMLDivElement>(null);
+
+  const scrollToGrid = () => {
+    setTimeout(() => {
+      menuGridRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 50);
+  };
   const [searchQuery, setSearchQuery] = useState("");
 
   // Removed local orderType state in favor of global store state
@@ -202,7 +212,10 @@ export function MenuClient({
               </div>
               <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                 <button
-                  onClick={() => setActiveCategory("all")}
+                  onClick={() => {
+                    setActiveCategory("all");
+                    scrollToGrid();
+                  }}
                   className={`
                            flex items-center gap-2 px-4 py-2 rounded-full font-bold whitespace-nowrap transition-all text-sm
                            ${
@@ -217,7 +230,10 @@ export function MenuClient({
                 {categories.map((cat) => (
                   <button
                     key={cat.id}
-                    onClick={() => setActiveCategory(cat.id)}
+                    onClick={() => {
+                      setActiveCategory(cat.id);
+                      scrollToGrid();
+                    }}
                     className={`
                              flex items-center gap-2 px-4 py-2 rounded-full font-bold whitespace-nowrap transition-all text-sm
                              ${
@@ -246,7 +262,10 @@ export function MenuClient({
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+              <div
+                ref={menuGridRef}
+                className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6"
+              >
                 {displayItems.length > 0 ? (
                   displayItems.map((item) => (
                     <div
@@ -296,15 +315,15 @@ export function MenuClient({
                                   ₹{item.variants[0].price}
                                 </span>
                               ) : (
-                                <span>
+                                <span className="font-bold text-slate-800">
                                   ₹
                                   {Math.min(
                                     ...item.variants.map((v) => v.price),
-                                  )}{" "}
-                                  - ₹
-                                  {Math.max(
-                                    ...item.variants.map((v) => v.price),
                                   )}
+                                  <span className="text-xs text-slate-400 font-normal">
+                                    {" "}
+                                    onwards
+                                  </span>
                                 </span>
                               )}
                             </div>
