@@ -25,18 +25,42 @@ app.prepare().then(() => {
     // ── WebSocket Server (noServer = upgrade is handled manually) ─────────────
     const wss = new WebSocketServer({ noServer: true });
 
+    // Server-side heartbeat — send a ping every 30 s so Railway's proxy
+    // never sees 60 s of silence and kills the connection.
+    const HEARTBEAT_MS = 30_000;
+
     wss.on("connection", (ws) => {
+        // Only one bridge at a time — gracefully close any existing connection
+        // so we don't accumulate zombie sockets that fire duplicate events.
+        if (global.printerWsClient && global.printerWsClient !== ws) {
+            try { global.printerWsClient.terminate(); } catch { }
+        }
+
         global.printerWsClient = ws;
+        ws.isAlive = true;
         console.log("🖨️  Printer bridge connected from restaurant PC");
 
+        // Start per-connection heartbeat
+        const heartbeat = setInterval(() => {
+            if (ws.readyState === ws.OPEN) {
+                ws.ping();
+            } else {
+                clearInterval(heartbeat);
+            }
+        }, HEARTBEAT_MS);
+
+        ws.on("pong", () => { ws.isAlive = true; });
+
         ws.on("close", () => {
-            global.printerWsClient = null;
+            clearInterval(heartbeat);
+            if (global.printerWsClient === ws) global.printerWsClient = null;
             console.log("🔌  Printer bridge disconnected");
         });
 
         ws.on("error", (err) => {
+            clearInterval(heartbeat);
             console.error("🖨️  Printer WS error:", err.message);
-            global.printerWsClient = null;
+            if (global.printerWsClient === ws) global.printerWsClient = null;
         });
 
         ws.on("message", (data) => {

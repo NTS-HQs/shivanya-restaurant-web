@@ -142,12 +142,6 @@ export default function POSPage() {
     i.name.toLowerCase().includes(search.toLowerCase()),
   );
 
-  console.log("POS Items:", {
-    categoriesCount: categories.length,
-    itemsToFilterCount: itemsToFilter.length,
-    filteredItemsCount: filteredItems.length,
-  });
-
   return (
     <div className="flex flex-col lg:flex-row h-screen overflow-hidden bg-slate-50">
       {/* Menu Selection Area */}

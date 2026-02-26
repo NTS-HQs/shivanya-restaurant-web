@@ -55,8 +55,17 @@ export async function sendPushNotification(
           notification,
         );
       } catch (err: any) {
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          // Subscription expired — mark for cleanup
+        const status: number = err.statusCode ?? 0;
+        if (
+          status === 410 ||
+          status === 404 ||
+          status === 400 ||
+          status === 401 ||
+          // web-push throws this when the push service returns an unexpected
+          // non-success status (e.g. the endpoint is gone but the service
+          // doesn't return a proper 410). Treat as stale.
+          (err.message as string)?.includes("unexpected response code")
+        ) {
           staleEndpoints.push(sub.endpoint);
         } else {
           console.error(
