@@ -4,7 +4,6 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 
 const { createServer } = require("http");
-const { parse } = require("url");
 const next = require("next");
 const { WebSocketServer } = require("ws");
 
@@ -18,8 +17,7 @@ global.printerWsClient = null;
 
 app.prepare().then(() => {
     const httpServer = createServer((req, res) => {
-        const parsedUrl = parse(req.url, true);
-        handle(req, res, parsedUrl);
+        handle(req, res);
     });
 
     // ── WebSocket Server (noServer = upgrade is handled manually) ─────────────
@@ -81,10 +79,11 @@ app.prepare().then(() => {
 
     // ── HTTP → WebSocket Upgrade Handler ─────────────────────────────────────
     httpServer.on("upgrade", (req, socket, head) => {
-        const { pathname, query } = parse(req.url, true);
+        const reqUrl = new URL(req.url, "http://localhost");
+        const pathname = reqUrl.pathname;
 
         if (pathname === "/printer-ws") {
-            const secret = query.secret;
+            const secret = reqUrl.searchParams.get("secret");
             const expected = process.env.PRINTER_BRIDGE_SECRET;
 
             // Timing-safe comparison to prevent secret inference via response time
