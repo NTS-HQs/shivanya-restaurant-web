@@ -175,15 +175,6 @@ export function MenuClient({
                     {profile.address}
                   </p>
                 </div>
-                <Badge
-                  className={`backdrop-blur-xl border-0 px-4 py-1.5 text-sm shadow-sm ${
-                    profile.isOpen
-                      ? "bg-green-500 text-white"
-                      : "bg-red-500 text-white"
-                  }`}
-                >
-                  {profile.isOpen ? "Open Now" : "Closed"}
-                </Badge>
               </div>
             </div>
           )}
